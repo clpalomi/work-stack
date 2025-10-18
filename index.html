@@ -52,6 +52,27 @@
 
     .menu-backdrop{ position:fixed; inset:0; background:transparent; z-index:30 }
 
+  /* ===== Menu (top-right) ===== */
+    .hamburger{ inline-size: var(--tap); block-size: var(--tap); border:0; background:transparent; padding:0; cursor:pointer; display:grid; place-items:center; border-radius:12px; color:var(--fg) }
+    .hamburger:focus-visible{ outline:3px solid color-mix(in srgb, var(--ring) 60%, transparent); outline-offset:2px }
+
+    .menu{ position: fixed; right: clamp(12px, 3vw, 20px); top: 60px; background: var(--surface); border:1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 8px; min-inline-size: 220px; opacity:0; transform: translateY(-6px); pointer-events: none; transition: opacity .16s ease, transform .16s ease; z-index: 40; }
+    .menu[aria-hidden="false"]{ opacity:1; transform:none; pointer-events:auto }
+    .menu-item{ display:block; width:100%; text-align:left; border:0; background:transparent; color:var(--fg); padding:10px 12px; border-radius:10px; font-weight:700; cursor:pointer }
+    .menu-item:hover, .menu-item:focus-visible{ background: color-mix(in srgb, var(--surface-2) 85%, transparent); outline:0 }
+    .menu-backdrop{ position:fixed; inset:0; background:transparent; z-index:30 }
+    .menu-sep{ border:none; border-top:1px solid var(--border); margin:6px 4px }
+
+    /* ===== Simple modal (About) ===== */
+    .modal{ position: fixed; inset:auto 0 0 0; margin:auto; max-inline-size: 520px; background: var(--surface); color: var(--fg); border:1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-lg); padding: 16px; z-index: 60; opacity:0; transform: translateY(8px); pointer-events:none; transition: opacity .16s ease, transform .16s ease }
+    .modal[aria-hidden="false"]{ opacity:1; transform:none; pointer-events:auto }
+    .modal-h{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px }
+    .modal-h h2{ margin:0; font-size:16px; font-weight:800 }
+    .modal-c{ font-size:14px; color:var(--muted) }
+    .modal-close{ border:0; background:transparent; color:var(--fg); cursor:pointer; inline-size: var(--tap); block-size: var(--tap); display:grid; place-items:center; border-radius:12px }
+    .modal-close:focus-visible{ outline:3px solid color-mix(in srgb, var(--ring) 60%, transparent); outline-offset:2px }
+    .modal-backdrop{ position:fixed; inset:0; background: rgba(0,0,0,.3); z-index:50 }
+
   </style>
 </head>
 <body>
@@ -73,7 +94,11 @@
 
   <!-- Flyout menu -->
   <div id="menu" class="menu" role="menu" aria-hidden="true">
-    <button id="menu-login" class="menu-item" role="menuitem">Sign in with Google</button>
+    <button id="menu-my" class="menu-item" role="menuitem">My entries</button>
+    <button id="menu-signin" class="menu-item" role="menuitem">Sign in with Google</button>
+    <button id="menu-signout" class="menu-item" role="menuitem" hidden>Sign out</button>
+    <hr class="menu-sep"/>
+    <button id="menu-about" class="menu-item" role="menuitem">About</button>
   </div>
   <div id="menu-backdrop" class="menu-backdrop" hidden></div>
 
@@ -102,6 +127,21 @@
     </section>
   </main>
   </div>
+  <div id="about" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="about-title">
+    <div class="modal-h">
+      <h2 id="about-title">About Work Log</h2>
+      <button id="about-close" class="modal-close" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-c">
+      <p>Minimal, privacy-friendly work tracker. Sign in with Google to keep your log private to you. Powered by Supabase (RLS enforced).</p>
+    </div>
+  </div>
+  <div id="about-backdrop" class="modal-backdrop" hidden></div>
+
   <script type="module" src="./js/main.js"></script>
 </body>
 </html>
