@@ -9,19 +9,27 @@ import { APP } from './config.js';
    menu:       document.getElementById('menu'),
    menuLogin:  document.getElementById('menu-login'),
    menuBackdrop: document.getElementById('menu-backdrop'),
+   menuMy: document.getElementById('menu-my'),
+   menuSignin: document.getElementById('menu-signin'),
+   menuSignout: document.getElementById('menu-signout'),
+   menuAbout: document.getElementById('menu-about'),
+   about: document.getElementById('about'),
+   aboutBackdrop: document.getElementById('about-backdrop'),
+   aboutClose: document.getElementById('about-close'),
  };
 
 export function setSignedOutUI() {
-  els.menuLogin.textContent = APP.bottomCtaSignedOut;
-  els.menuLogin.dataset.state = 'signed-out';
-  els.login.dataset.state = 'signed-out';
+  els.who.textContent = '';
+  els.menuSignin.hidden = false;
+  els.menuSignout.hidden = true;
   setEmpty(APP.emptySignedOut);
   els.count.textContent = '0 entries';
 }
 
 export function setSignedInUI(email) {
-  els.menuLogin.textContent = APP.bottomCtaSignedIn;
-  els.menuLogin.dataset.state = 'signed-in';
+  els.who.textContent = email || 'Signed in';
+  els.menuSignin.hidden = true;
+  els.menuSignout.hidden = false;
 }
 
 export function setLoading() {
