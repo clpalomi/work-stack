@@ -44,7 +44,35 @@ els.menuBtn.addEventListener('click', toggleMenu);
 els.menuBackdrop.addEventListener('click', closeMenu);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
 
+// My entries ⇒ scroll to table
+els.menuMy.addEventListener('click', () => {
+  document.getElementById('log-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  closeMenu();
+});
 
+// Sign in
+els.menuSignin.addEventListener('click', async () => {
+  els.menuSignin.disabled = true;
+  try { await signInWithGoogle(OAUTH_REDIRECT_TO); }
+  catch (e) { console.error(e); alert('Auth failed. Check keys/redirect URLs.'); }
+  finally { els.menuSignin.disabled = false; closeMenu(); }
+});
+
+// Sign out
+els.menuSignout.addEventListener('click', async () => {
+  els.menuSignout.disabled = true;
+  try { await signOut(); }
+  catch (e) { console.error(e); alert('Sign out failed.'); }
+  finally { els.menuSignout.disabled = false; closeMenu(); }
+});
+
+// About modal
+function openAbout(){ els.about.setAttribute('aria-hidden','false'); els.aboutBackdrop.hidden = false; }
+function closeAbout(){ els.about.setAttribute('aria-hidden','true'); els.aboutBackdrop.hidden = true; }
+els.menuAbout.addEventListener('click', () => { openAbout(); closeMenu(); });
+els.aboutBackdrop.addEventListener('click', closeAbout);
+els.aboutClose.addEventListener('click', closeAbout);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAbout(); });
 
 els.menuLogin.addEventListener('click', async () => {
   const signedIn = els.menuLogin.dataset.state === 'signed-in';
