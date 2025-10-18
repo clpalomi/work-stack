@@ -40,7 +40,8 @@ export function renderRows(data) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${fmtDate(row.date)}</td>
-      <td>${row.language ?? ''}</td>
+      <td>${row.task ?? ''}</td>
+      <td>${row.project ?? ''}</td>
       <td class="right">${Number(row.minutes ?? 0)}</td>
       <td>${row.notes ?? ''}</td>
     `;
