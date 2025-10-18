@@ -1,29 +1,27 @@
 // js/ui.js
 import { APP } from './config.js';
 
-export const els = {
-  who:    document.getElementById('who'),
-  rows:   document.getElementById('rows'),
-  count:  document.getElementById('count'),
-  login:  document.getElementById('login'),
-  cta:    document.getElementById('cta'),
-  hint:   document.getElementById('hint'),
-};
+ export const els = {
+   who:        document.getElementById('who'),
+   rows:       document.getElementById('rows'),
+   count:      document.getElementById('count'),
+   menuBtn:    document.getElementById('menu-btn'),
+   menu:       document.getElementById('menu'),
+   menuLogin:  document.getElementById('menu-login'),
+   menuBackdrop: document.getElementById('menu-backdrop'),
+ };
 
 export function setSignedOutUI() {
-  els.who.textContent = '';
-  els.cta.textContent = APP.bottomCtaSignedOut;
-  els.hint.textContent = 'We’ll only use your email to keep your private log.';
+  els.menuLogin.textContent = APP.bottomCtaSignedOut;
+  els.menuLogin.dataset.state = 'signed-out';
   els.login.dataset.state = 'signed-out';
   setEmpty(APP.emptySignedOut);
   els.count.textContent = '0 entries';
 }
 
 export function setSignedInUI(email) {
-  els.who.textContent = email || 'Signed in';
-  els.cta.textContent = APP.bottomCtaSignedIn;
-  els.hint.textContent = 'Signed in — loading your log…';
-  els.login.dataset.state = 'signed-in';
+  els.menuLogin.textContent = APP.bottomCtaSignedIn;
+  els.menuLogin.dataset.state = 'signed-in';
 }
 
 export function setLoading() {
