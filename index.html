@@ -1,32 +1,141 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Study Log</title>
   <link rel="preconnect" href="https://esm.sh">
   <style>
-    /* Keep your minimal styles from the canvas version (table up, wide button bottom).
-       Only change is: remove inline JS. */
-    /* ... [your existing CSS here] ... */
+    /* =========================================================
+       Minimalist UI (Pomofocus-inspired structure, new palette)
+       Principles: clarity, generous spacing, sharp contrasts,
+       no ornamentation, clear focus states, responsive by default
+       ========================================================= */
+
+    /* ===== Design tokens ===== */
+    :root{
+      /* Neutral-first palette (not Pomofocus colors) */
+      --bg:        #0d1117;   /* canvas */
+      --surface:   #0f141b;   /* card */
+      --surface-2: #121827;   /* table header */
+      --fg:        #e6eaf2;   /* text */
+      --muted:     #9aa3b2;   /* secondary text */
+      --border:    #1f2937;   /* strokes */
+      --ring:      #3b82f6;   /* focus ring (blue) */
+      --accent:    #10b981;   /* action (teal/green) */
+      --accent-2:  #059669;   /* action depth */
+
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --shadow-lg: 0 24px 60px rgba(0,0,0,.35);
+      --shadow-sm: 0 6px 20px rgba(0,0,0,.25);
+      --tap: 52px;  /* minimum comfortable touch target */
+      --measure: 74ch; /* max text width */
+    }
+
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg:#f7f8fb; --surface:#ffffff; --surface-2:#f4f6fb; --fg:#0f172a;
+        --muted:#64748b; --border:#e5e7eb; --shadow-lg: 0 16px 40px rgba(15,23,42,.06);
+        --ring:#2563eb; --accent:#0ea5e9; --accent-2:#0284c7;
+      }
+    }
+
+    /* ===== Base reset ===== */
+    *,*::before,*::after{ box-sizing:border-box }
+    html,body{ height:100% }
+    body{
+      margin:0; color:var(--fg); background:var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+      display:flex; flex-direction:column; min-height:100svh;
+    }
+    img,svg{ display:block }
+
+    /* ===== Layout ===== */
+    .topbar{
+      position:sticky; top:0; z-index:10;
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      padding: 14px clamp(14px, 3vw, 24px);
+      background: color-mix(in srgb, var(--bg) 92%, transparent);
+      backdrop-filter: blur(6px) saturate(130%);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand{ font-weight:800; letter-spacing:-.01em; font-size: 18px }
+    .sub{ color:var(--muted); font-size:12px }
+
+    .shell{ width:100%; max-width: 980px; margin-inline:auto; padding: clamp(12px, 3vw, 24px); flex:1 1 auto; }
+
+    /* ===== Card ===== */
+    .card{
+      background:var(--surface); border:1px solid var(--border);
+      border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); overflow:hidden;
+    }
+    .card-h{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 16px 18px; border-bottom:1px solid var(--border);
+    }
+    .card-t{ margin:0; font-weight:800; letter-spacing:-.01em }
+    .badge{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; color:var(--muted); border:1px solid var(--border) }
+
+    /* ===== Table ===== */
+    .table-wrap{ overflow:auto }
+    table{ width:100%; border-collapse: collapse; font-size: 14px; }
+    thead th{
+      position:sticky; top:0; z-index:1; text-align:left;
+      font-weight:700; color:var(--muted); background: var(--surface-2);
+    }
+    th, td{ padding: 12px 16px; border-bottom: 1px solid var(--border); white-space: nowrap }
+    tbody tr:hover{ background: color-mix(in srgb, var(--surface) 90%, transparent) }
+    .right{ text-align:right }
+    .empty{ padding:16px; color:var(--muted); text-align:center }
+
+    /* ===== Sticky dock (primary action) ===== */
+    .dock{
+      position: sticky; bottom: 0; padding: clamp(12px, 3vw, 18px);
+      background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg) 96%, transparent));
+      backdrop-filter: blur(6px);
+      border-top: 1px solid var(--border);
+    }
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center; gap:10px;
+      min-height: var(--tap); inline-size: 100%; max-inline-size: 760px; margin: 0 auto;
+      border:0; border-radius: 18px; cursor:pointer;
+      color:#fff; font-weight:800; letter-spacing:.01em;
+      background: linear-gradient(180deg, var(--accent), var(--accent-2));
+      box-shadow: var(--shadow-sm);
+      transition: transform .06s ease, filter .15s ease, box-shadow .2s ease;
+    }
+    .btn:focus-visible{ outline: 3px solid color-mix(in srgb, var(--ring) 60%, transparent); outline-offset: 2px }
+    .btn:active{ transform: translateY(1px) }
+    .btn[disabled]{ opacity:.7; cursor:not-allowed }
+
+    .hint{ margin-top:8px; text-align:center; font-size:12px; color:var(--muted) }
+
+    /* ===== Motion & accessibility ===== */
+    @media (prefers-reduced-motion: reduce){
+      *{ scroll-behavior: auto !important; transition:none !important }
+    }
   </style>
 </head>
 <body>
-  <header class="topbar">
+  <!-- Header -->
+  <header class="topbar" role="banner">
     <div>
       <div class="brand">Study Log</div>
-      <div class="sub">Minimal view • connected to Supabase</div>
+      <div class="sub">Minimal • focused • fast</div>
     </div>
     <div id="who" class="sub" aria-live="polite"></div>
   </header>
 
-  <main class="shell">
+  <!-- Content -->
+  <main class="shell" role="main">
     <section class="card" aria-labelledby="log-title">
       <div class="card-h">
-        <h2 id="log-title" class="card-t">Your sessions</h2>
+        <h1 id="log-title" class="card-t">Your sessions</h1>
         <span id="count" class="badge" aria-live="polite">0 entries</span>
       </div>
-      <div class="card-c table-wrap">
+      <div class="table-wrap" role="region" aria-label="Study log table">
         <table aria-describedby="log-title">
           <thead>
             <tr>
@@ -44,6 +153,7 @@
     </section>
   </main>
 
+  <!-- Primary action dock -->
   <div class="dock">
     <button id="login" class="btn">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -55,7 +165,7 @@
     <div id="hint" class="hint">We’ll only use your email to keep your private log.</div>
   </div>
 
-  <!-- Modules -->
+  <!-- Modules (split JS files) -->
   <script type="module" src="./js/main.js"></script>
 </body>
 </html>
