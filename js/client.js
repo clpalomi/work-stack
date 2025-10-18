@@ -28,7 +28,7 @@ export async function fetchLog() {
   // adjust table/columns if yours differ
   const { data, error } = await supabase
     .from('study_log')
-    .select('date, language, minutes, notes')
+    .select('date, task, project, minutes, notes')
     .order('date', { ascending: false })
     .limit(APP.tableLimit);
 
