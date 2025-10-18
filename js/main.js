@@ -18,13 +18,37 @@ async function refreshUI() {
   }
 }
 
+// Menu helpers
+function openMenu() {
+  els.menu.setAttribute('aria-hidden', 'false');
+  els.menuBtn.setAttribute('aria-expanded', 'true');
+  els.menuBackdrop.hidden = false;
+}
+function closeMenu() {
+  els.menu.setAttribute('aria-hidden', 'true');
+  els.menuBtn.setAttribute('aria-expanded', 'false');
+  els.menuBackdrop.hidden = true;
+}
+function toggleMenu() {
+  const open = els.menu.getAttribute('aria-hidden') === 'false';
+  open ? closeMenu() : openMenu();
+}
+
 supabase.auth.onAuthStateChange((evt) => {
   if (evt === 'SIGNED_IN' || evt === 'SIGNED_OUT') refreshUI();
 });
 
-els.login.addEventListener('click', async () => {
-  const signedIn = els.login.dataset.state === 'signed-in';
-  els.login.disabled = true;
+
+// Open/close menu
+els.menuBtn.addEventListener('click', toggleMenu);
+els.menuBackdrop.addEventListener('click', closeMenu);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+
+
+
+els.menuLogin.addEventListener('click', async () => {
+  const signedIn = els.menuLogin.dataset.state === 'signed-in';
+  els.menuLogin.disabled = true;
   try {
     if (signedIn) {
       await signOut();
@@ -35,7 +59,8 @@ els.login.addEventListener('click', async () => {
     console.error(e);
     alert('Authentication failed. Confirm your keys and redirect URLs in Supabase.');
   } finally {
-    els.login.disabled = false;
+    els.menuLogin.disabled = false;
+    closeMenu();
   }
 });
 
