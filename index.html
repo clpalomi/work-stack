@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Study Log</title>
+  <link rel="preconnect" href="https://esm.sh">
+  <style>
+    /* Keep your minimal styles from the canvas version (table up, wide button bottom).
+       Only change is: remove inline JS. */
+    /* ... [your existing CSS here] ... */
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="brand">Study Log</div>
+      <div class="sub">Minimal view • connected to Supabase</div>
+    </div>
+    <div id="who" class="sub" aria-live="polite"></div>
+  </header>
+
+  <main class="shell">
+    <section class="card" aria-labelledby="log-title">
+      <div class="card-h">
+        <h2 id="log-title" class="card-t">Your sessions</h2>
+        <span id="count" class="badge" aria-live="polite">0 entries</span>
+      </div>
+      <div class="card-c table-wrap">
+        <table aria-describedby="log-title">
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Language</th>
+              <th scope="col" class="right">Minutes</th>
+              <th scope="col">Notes</th>
+            </tr>
+          </thead>
+          <tbody id="rows">
+            <tr><td class="empty" colspan="4">Sign in to load your log…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div class="dock">
+    <button id="login" class="btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 3a9 9 0 1 1 0 18" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M3 12h11m-3-3 3 3-3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span id="cta">Sign in with Google</span>
+    </button>
+    <div id="hint" class="hint">We’ll only use your email to keep your private log.</div>
+  </div>
+
+  <!-- Modules -->
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
