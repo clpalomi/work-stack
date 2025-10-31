@@ -7,7 +7,6 @@ import { APP } from './config.js';
    count:      document.getElementById('count'),
    menuBtn:    document.getElementById('menu-btn'),
    menu:       document.getElementById('menu'),
-   menuLogin:  document.getElementById('menu-login'),
    menuBackdrop: document.getElementById('menu-backdrop'),
    menuMy: document.getElementById('menu-my'),
    menuSignin: document.getElementById('menu-signin'),
