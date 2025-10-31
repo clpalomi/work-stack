@@ -19,21 +19,27 @@ import { APP } from './config.js';
  };
 
 export function setSignedOutUI() {
-  els.who.textContent = '';
-  els.menuSignin.hidden = false;
-  els.menuSignout.hidden = true;
-  setEmpty(APP.emptySignedOut);
-  els.count.textContent = '0 entries';
+  // Toggle buttons
+  els.menuSignin.hidden = false
+  els.menuSignout.hidden = true
+  // Clear identity
+  els.who.textContent = ''
+  // Reset table
+  els.rows.innerHTML = `<tr><td class="empty" colspan="5">Sign in to load your log…</td></tr>`
+  els.count.textContent = '0 entries'
 }
 
 export function setSignedInUI(email) {
-  els.who.textContent = email || 'Signed in';
-  els.menuSignin.hidden = true;
-  els.menuSignout.hidden = false;
+  // Toggle buttons
+  els.menuSignin.hidden = true
+  els.menuSignout.hidden = false
+  // Show identity
+  els.who.textContent = email ?? ''
 }
 
+
 export function setLoading() {
-  setEmpty('Loading…');
+  els.rows.innerHTML = `<tr><td class="empty" colspan="5">Loading…</td></tr>`
 }
 
 export function setEmpty(msg) {
