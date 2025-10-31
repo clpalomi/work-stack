@@ -74,22 +74,4 @@ els.aboutBackdrop.addEventListener('click', closeAbout);
 els.aboutClose.addEventListener('click', closeAbout);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAbout(); });
 
-els.menuLogin.addEventListener('click', async () => {
-  const signedIn = els.menuLogin.dataset.state === 'signed-in';
-  els.menuLogin.disabled = true;
-  try {
-    if (signedIn) {
-      await signOut();
-    } else {
-      await signInWithGoogle(OAUTH_REDIRECT_TO);
-    }
-  } catch (e) {
-    console.error(e);
-    alert('Authentication failed. Confirm your keys and redirect URLs in Supabase.');
-  } finally {
-    els.menuLogin.disabled = false;
-    closeMenu();
-  }
-});
-
 refreshUI();
