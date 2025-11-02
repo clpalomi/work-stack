@@ -4,8 +4,9 @@
 <script type="module">
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-  const SUPABASE_URL = 'https://<YOUR-PROJECT-REF>.supabase.co';
-  const SUPABASE_ANON_KEY = '<ANON>';
+  const SUPABASE_URL = 'https://jstkzbgypzwyjwxraioz.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpzdGt6Ymd5cHp3eWp3eHJhaW96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3MjI4NzEsImV4cCI6MjA3NjI5ODg3MX0.TyFHy_K2qYbk5HB20oFnDSpVoibfgJUHq9JyXPKsrF8';
+
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: true, detectSessionInUrl: true, autoRefreshToken: true },
