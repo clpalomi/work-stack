@@ -1,4 +1,6 @@
 // js/main.js
+const OAUTH_REDIRECT_TO = `${location.origin}${location.pathname}`;
+
 import { OAUTH_REDIRECT_TO } from './config.js';
 import { supabase, getUser, fetchLog, signInWithGoogle, signOut } from './client.js';
 import { els, setSignedOutUI, setSignedInUI, setLoading, setEmpty, renderRows } from './ui.js';
