@@ -2,9 +2,22 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, APP } from './config.js';
 
+// Use defaults: detectSessionInUrl:true, flowType:pkce (web)
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, detectSessionInUrl: true, autoRefreshToken: true },
+  auth: { persistSession: true, autoRefreshToken: true }, // don't set detectSessionInUrl:false here
 });
+
+// Parse FIRST, then clean (if desired)
+(async () => {
+  const { data, error } = await supabase.auth.getSession(); // handles ?code&state or #access_token&state
+  console.log('[auth:init] getSession =>', { data, error });
+
+  // Only now is it safe to strip OAuth noise
+  if (location.hash || /[?&](error|access_token|code|state)=/.test(location.search)) {
+    history.replaceState({}, '', `${location.origin}${location.pathname}`);
+  }
+})();
+
 
 (async () => {
   console.log('[auth:init] href:', location.href);
