@@ -1,0 +1,50 @@
+<!doctype html>
+<meta charset="utf-8" />
+<button id="g">Sign in with Google</button>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+  const SUPABASE_URL = 'https://<YOUR-PROJECT-REF>.supabase.co';
+  const SUPABASE_ANON_KEY = '<ANON>';
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, detectSessionInUrl: true, autoRefreshToken: true },
+  });
+
+  // 1) Log everything about the URL and redirect target
+  const OAUTH_REDIRECT_TO = new URL('./', location.href).href; // normalized to trailing slash
+  console.log('[AUTH-TEST] origin', location.origin);
+  console.log('[AUTH-TEST] pathname', location.pathname);
+  console.log('[AUTH-TEST] search', location.search);
+  console.log('[AUTH-TEST] hash', location.hash);
+  console.log('[AUTH-TEST] redirectTo', OAUTH_REDIRECT_TO);
+
+  // 2) Log auth state transitions (super helpful)
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log('[AUTH-TEST] onAuthStateChange', event, session);
+  });
+
+  // 3) Force Supabase to parse OAuth params; then clean URL noise
+  (async () => {
+    const { data, error } = await supabase.auth.getSession();
+    console.log('[AUTH-TEST] getSession()', { data, error });
+    if (location.hash || /[?&](error|access_token|code|state)=/.test(location.search)) {
+      history.replaceState({}, '', `${location.origin}${location.pathname}`);
+      console.log('[AUTH-TEST] cleaned URL');
+    }
+  })();
+
+  // 4) Manual network error surfacing
+  window.addEventListener('unhandledrejection', e => console.error('[AUTH-TEST] Unhandled', e.reason));
+  window.addEventListener('error', e => console.error('[AUTH-TEST] Error', e.error || e.message));
+
+  // 5) Click handler (no auto-trigger on load!)
+  document.getElementById('g').addEventListener('click', async () => {
+    console.log('[AUTH-TEST] click → signInWithOAuth redirectTo=', OAUTH_REDIRECT_TO);
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: OAUTH_REDIRECT_TO },
+    });
+    console.log('[AUTH-TEST] signInWithOAuth returned', { data, error });
+  });
+</script>
