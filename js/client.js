@@ -43,8 +43,7 @@ export async function getUser() {
 
 export async function signInWithGoogle(redirectTo) {
   const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo },
+    provider: 'google'
   });
   if (error) throw error;
 }
