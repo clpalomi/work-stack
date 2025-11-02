@@ -54,9 +54,12 @@ els.menuMy.addEventListener('click', () => {
 // Sign in
 els.menuSignin.addEventListener('click', async () => {
   els.menuSignin.disabled = true;
-  try { await signInWithGoogle(OAUTH_REDIRECT_TO); }
-  catch (e) { console.error(e); alert('Auth failed. Check keys/redirect URLs.'); }
-  finally { els.menuSignin.disabled = false; closeMenu(); }
+  try {
+    await signInWithGoogle(OAUTH_REDIRECT_TO); // or call without redirectTo; see below
+  } finally {
+    els.menuSignin.disabled = false;
+    closeMenu();
+  }
 });
 
 // Sign out
