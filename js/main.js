@@ -46,6 +46,12 @@ const about = document.getElementById('about');
 const aboutBackdrop = document.getElementById('about-backdrop');
 const aboutClose = document.getElementById('about-close');
 
+// init date picker and keep a reference
+let fp = null;
+if (els.fDate) {
+  fp = initDatePicker(els.fDate);
+}
+
 // ====== REFRESH UI ======
 async function refreshUI() {
   const user = await getUser();
@@ -90,9 +96,16 @@ on(els.btnDownloadCsv, 'click', () => downloadCSV(CACHE_ROWS));
 on(els.btnDownloadXlsx, 'click', () => downloadXLSX(CACHE_ROWS));
 
 // ===== Modal wiring (Add entry) =====
+// “Now” button — update flatpickr if present
 on(els.btnToday, 'click', () => {
-  const dmy = isoToDMY(todayISO());
-  if (els.fDate) els.fDate.value = dmy;
+  const d = new Date();
+  if (fp && fp.setDate) {
+    fp.setDate(d, true); // true => update input value & trigger change
+  } else {
+    // fallback: manual dmy
+    els.fDate.value = isoToDMY(todayISO());
+    els.fDate.dispatchEvent(new Event('input', { bubbles: true }));
+  }
 });
 
 if (els.fDate) {
@@ -103,17 +116,32 @@ if (els.fDate) {
 on(els.entryForm, 'submit', async (e) => {
   e.preventDefault();
   try {
-    const task = els.fTask?.value.trim();
-    const project = els.fProject?.value.trim();
-    const minutes = Number(els.fMinutes?.value);
-    const dateISO = toISO((els.fDate?.value || '').trim());
-    const notes = (els.fNotes?.value || '').trim();
+    const task = (els.fTask?.value || '').trim();
+    const project = (els.fProject?.value || '').trim();
+    const minutesRaw = (els.fMinutes?.value || '').trim();
+    const minutes = Number(minutesRaw);
 
-    if (!task || !project || !minutes || !dateISO) {
+    // if flatpickr is present, always read from its selected date
+    let dmy = (els.fDate?.value || '').trim();
+    if (fp && fp.selectedDates?.length) {
+      const dd = fp.selectedDates[0];
+      // normalize to dd/mm/yyyy for our toISO parser
+      const pad = n => String(n).padStart(2, '0');
+      dmy = `${pad(dd.getDate())}/${pad(dd.getMonth()+1)}/${dd.getFullYear()}`;
+      // also reflect back into the textbox so user sees it
+      els.fDate.value = dmy;
+    }
+    const dateISO = toISO(dmy);
+
+    // Debug if something is off
+    console.log('[save-check]', { task, project, minutesRaw, minutes, dmy, dateISO });
+
+    if (!task || !project || !Number.isFinite(minutes) || minutes < 1 || !dateISO) {
       alert('Please fill Task, Project, Minutes, and a valid Date (dd/mm/yyyy).');
       return;
     }
-    await insertLog({ task, project, minutes, dateISO, notes });
+
+    await insertLog({ task, project, minutes, dateISO, notes: (els.fNotes?.value || '').trim() });
     els.entryDialog?.close?.();
     await refreshUI();
   } catch (err) {
