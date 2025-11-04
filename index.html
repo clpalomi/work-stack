@@ -109,6 +109,73 @@
     </div>
   </header>
 
+<!-- Toolbar -->
+<div class="toolbar" id="toolbar" hidden>
+  <button id="btnAdd">+ Add entry</button>
+
+  <label class="notes-toggle">
+    <input type="checkbox" id="chkNotes" />
+    Show Notes
+  </label>
+
+  <div class="download">
+    <button id="btnDownloadCsv">Download CSV</button>
+    <button id="btnDownloadXlsx">Download XLSX</button>
+  </div>
+</div>
+
+<!-- Table mount -->
+<div id="tableWrap"></div>
+
+<!-- Project lanes -->
+<div id="projectsWrap"></div>
+
+<!-- Add/Edit Modal -->
+<dialog id="entryDialog">
+  <form method="dialog" id="entryForm">
+    <h3>Add work log</h3>
+
+    <label>Task*
+      <input id="fTask" required />
+    </label>
+
+    <label>Project*
+      <input id="fProject" required />
+    </label>
+
+    <label>Minutes*
+      <input id="fMinutes" type="number" min="1" step="1" required />
+    </label>
+
+    <label>Date*
+      <div class="date-row">
+        <input id="fDate" placeholder="dd/mm/yyyy" inputmode="numeric" />
+        <button type="button" id="btnToday">Now</button>
+      </div>
+      <small>Use dd/mm/yyyy or click “Now”. (You can also click the calendar icon.)</small>
+    </label>
+
+    <label>Notes
+      <textarea id="fNotes" rows="3" placeholder="Optional"></textarea>
+    </label>
+
+    <menu>
+      <button value="cancel">Cancel</button>
+      <button id="btnSave" value="default">Save</button>
+    </menu>
+  </form>
+</dialog>
+
+<!-- (optional) lightweight calendar: Flatpickr -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<!-- (optional) XLSX export -->
+<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script>
+
+
+
+  
   <!-- Flyout menu -->
   <div id="menu" class="menu" role="menu" aria-hidden="true">
     <button id="menu-my" class="menu-item" role="menuitem">My entries</button>
