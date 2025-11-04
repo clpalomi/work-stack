@@ -6,6 +6,52 @@ import { OAUTH_REDIRECT_TO } from './config.js'; // <-- make sure this exists
 // tiny helper so addEventListener never crashes if an element is missing
 const on = (el, evt, fn) => el && el.addEventListener(evt, fn);
 
+.toolbar {
+  display:flex; gap:.75rem; align-items:center; margin: .75rem 0;
+}
+.toolbar .download { display:flex; gap:.5rem; margin-left:auto; }
+.notes-toggle { display:flex; gap:.4rem; align-items:center; }
+
+.table {
+  width:100%; border-collapse: collapse; font-size: 0.95rem;
+}
+.table th, .table td { border-bottom: 1px solid var(--border,#ddd); padding:.5rem .6rem; }
+.table th { text-align: left; font-weight:600; }
+
+#projectsWrap { margin-top: 1rem; display:flex; flex-direction:column; gap:1rem; }
+
+.project-lane {
+  border:1px solid var(--border,#ddd); border-radius:12px; padding:.75rem;
+}
+.project-lane h4 { margin:0 0 .5rem; font-size:1rem; display:flex; justify-content:space-between; }
+
+.task-bar-row {
+  display:flex; gap:.75rem; overflow-x:auto; padding-bottom:.25rem;
+}
+.task-card {
+  flex: 0 0 auto;
+  width: 72px;                 /* narrow, scrolls horizontally when many */
+  display:flex; flex-direction:column; align-items:center; gap:.35rem;
+}
+.task-card .bar {
+  width: 100%;
+  border-radius: 10px;
+  background: var(--bar,#7aa7ff);
+  position: relative;
+  /* “gold coin” 30-min indentations using repeating gradient */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,.18) 0,
+    rgba(255,255,255,.18) calc(var(--step,8px) - 1px),
+    transparent calc(var(--step,8px) - 1px),
+    transparent var(--step,8px)
+  );
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
+}
+.task-card .label { text-align:center; font-size:.8rem; line-height:1.1; }
+.task-card .mins { font-size:.75rem; color:#666; }
+
+
 async function refreshUI() {
   try {
     const user = await getUser();
