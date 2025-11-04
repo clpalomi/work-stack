@@ -1,17 +1,19 @@
 // js/main.js
-
-import { OAUTH_REDIRECT_TO } from './config.js';
 import { supabase, getUser, fetchLog, signInWithGoogle, signOut } from './client.js';
 import { els, setSignedOutUI, setSignedInUI, setLoading, setEmpty, renderRows } from './ui.js';
+import { OAUTH_REDIRECT_TO } from './config.js'; // <-- make sure this exists
+
+// tiny helper so addEventListener never crashes if an element is missing
+const on = (el, evt, fn) => el && el.addEventListener(evt, fn);
 
 async function refreshUI() {
-  const user = await getUser();
-  if (!user) return setSignedOutUI();
-  setSignedInUI(user.email);
   try {
+    const user = await getUser();
+    if (!user) return setSignedOutUI();
+    setSignedInUI(user.email);
     setLoading();
     const data = await fetchLog();
-    if (!data.length) return setEmpty('No entries yet. Start your first session!');
+    if (!data?.length) return setEmpty('No entries yet. Start your first session!');
     renderRows(data);
   } catch (err) {
     console.error(err);
@@ -21,41 +23,49 @@ async function refreshUI() {
 
 // Menu helpers
 function openMenu() {
+  if (!els.menu || !els.menuBtn || !els.menuBackdrop) return;
   els.menu.setAttribute('aria-hidden', 'false');
   els.menuBtn.setAttribute('aria-expanded', 'true');
   els.menuBackdrop.hidden = false;
 }
 function closeMenu() {
+  if (!els.menu || !els.menuBtn || !els.menuBackdrop) return;
   els.menu.setAttribute('aria-hidden', 'true');
   els.menuBtn.setAttribute('aria-expanded', 'false');
   els.menuBackdrop.hidden = true;
 }
 function toggleMenu() {
+  if (!els.menu) return;
   const open = els.menu.getAttribute('aria-hidden') === 'false';
   open ? closeMenu() : openMenu();
 }
 
+// Keep UI in sync with auth
 supabase.auth.onAuthStateChange((evt) => {
   if (evt === 'SIGNED_IN' || evt === 'SIGNED_OUT') refreshUI();
 });
 
+// Bind events (safely)
+on(els.menuBtn, 'click', toggleMenu);
+on(els.menuBackdrop, 'click', closeMenu);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeMenu(); } });
 
-// Open/close menu
-els.menuBtn.addEventListener('click', toggleMenu);
-els.menuBackdrop.addEventListener('click', closeMenu);
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
-
-// My entries ⇒ scroll to table
-els.menuMy.addEventListener('click', () => {
+on(els.menuMy, 'click', () => {
   document.getElementById('log-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   closeMenu();
 });
 
 // Sign in
-els.menuSignin.addEventListener('click', async () => {
+on(els.menuSignin, 'click', async () => {
+  if (!els.menuSignin) return;
   els.menuSignin.disabled = true;
   try {
-    await signInWithGoogle(OAUTH_REDIRECT_TO); // or call without redirectTo; see below
+    // remember where we were to come back after callback.html
+    sessionStorage.setItem('post_auth_redirect', location.href);
+    await signInWithGoogle(OAUTH_REDIRECT_TO);
+  } catch (e) {
+    console.error(e);
+    alert('Authentication failed. Confirm keys and redirect URLs in Supabase.');
   } finally {
     els.menuSignin.disabled = false;
     closeMenu();
@@ -63,19 +73,29 @@ els.menuSignin.addEventListener('click', async () => {
 });
 
 // Sign out
-els.menuSignout.addEventListener('click', async () => {
+on(els.menuSignout, 'click', async () => {
+  if (!els.menuSignout) return;
   els.menuSignout.disabled = true;
-  try { await signOut(); }
-  catch (e) { console.error(e); alert('Sign out failed.'); }
-  finally { els.menuSignout.disabled = false; closeMenu(); }
+  try {
+    await signOut(); // your client.js wrapper calls supabase.auth.signOut()
+    sessionStorage.removeItem('post_auth_redirect');
+  } catch (e) {
+    console.error(e);
+    alert('Sign out failed.');
+  } finally {
+    els.menuSignout.disabled = false;
+    closeMenu();
+  }
 });
 
 // About modal
-function openAbout(){ els.about.setAttribute('aria-hidden','false'); els.aboutBackdrop.hidden = false; }
-function closeAbout(){ els.about.setAttribute('aria-hidden','true'); els.aboutBackdrop.hidden = true; }
-els.menuAbout.addEventListener('click', () => { openAbout(); closeMenu(); });
-els.aboutBackdrop.addEventListener('click', closeAbout);
-els.aboutClose.addEventListener('click', closeAbout);
+function openAbout(){ if (!els.about || !els.aboutBackdrop) return; els.about.setAttribute('aria-hidden','false'); els.aboutBackdrop.hidden = false; }
+function closeAbout(){ if (!els.about || !els.aboutBackdrop) return; els.about.setAttribute('aria-hidden','true'); els.aboutBackdrop.hidden = true; }
+on(els.menuAbout, 'click', () => { openAbout(); closeMenu(); });
+on(els.aboutBackdrop, 'click', closeAbout);
+on(els.aboutClose, 'click', closeAbout);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAbout(); });
 
+// Initial paint
 refreshUI();
+
