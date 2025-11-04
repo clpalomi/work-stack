@@ -32,6 +32,33 @@ let SHOW_NOTES = false;
 const on = (el, evt, fn) => el && el.addEventListener(evt, fn);
 
 // ====== MENU/ABOUT ELEMENTS (directly from DOM to avoid mismatches) ======
+// main.js (or wherever you wire UI events)
+const els = {
+  form: document.getElementById('add-form'),
+  when: document.getElementById('entry-when'),          // <input type="datetime-local" required>
+  nowBtn: document.getElementById('btn-now'),            // the Now button
+  error: document.getElementById('add-error') || null,   // optional error text node
+};
+
+// IMPORTANT: ensure the Now button is NOT a submit button in HTML:
+// <button id="btn-now" type="button">Now</button>
+
+function localDatetimeString(d = new Date()) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+els.nowBtn?.addEventListener('click', () => {
+  // produce EXACT format required by <input type="datetime-local">: YYYY-MM-DDTHH:MM
+  els.when.value = localDatetimeString();
+  // nudge any form listeners/validators
+  els.when.dispatchEvent(new Event('input', { bubbles: true }));
+  els.when.setCustomValidity('');
+  els.error && (els.error.textContent = '');
+});
+
+
+
 const menuBtn = document.getElementById('menu-btn');
 const menu = document.getElementById('menu');
 const menuBackdrop = document.getElementById('menu-backdrop');
