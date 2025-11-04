@@ -4,7 +4,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, APP } from './config.js';
 
 // Use defaults: detectSessionInUrl:true, flowType:pkce (web)
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true }, // don't set detectSessionInUrl:false here
+  auth: { persistSession: true, detectSessionInUrl: true, autoRefreshToken: true }, //
 });
 
 // Parse FIRST, then clean (if desired)
