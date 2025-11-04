@@ -194,3 +194,22 @@ function truncate(s, n) {
   if (s.length <= n) return s;
   return s.slice(0, n-1) + '…';
 }
+
+export function initDatePicker(inputEl) {
+  if (window.flatpickr) {
+    window.flatpickr(inputEl, {
+      dateFormat: "d/m/Y",
+      altInput: true,
+      altFormat: "d/m/Y",
+      allowInput: true,
+      defaultDate: new Date(),
+      // compact, with easy year navigation:
+      monthSelectorType: 'dropdown',   // month dropdown
+      wrap: false,
+      disableMobile: false
+    });
+  } else {
+    // Fallback: native <input type="date"> look-and-feel is not used
+    // (we keep text + parsing), but nothing else to do
+  }
+}
