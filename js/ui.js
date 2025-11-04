@@ -211,18 +211,17 @@ function truncate(s, n) {
 // Date picker init
 // =====================
 export function initDatePicker(inputEl) {
-  if (window.flatpickr) {
-    window.flatpickr(inputEl, {
-      dateFormat: 'd/m/Y',
-      altInput: true,
-      altFormat: 'd/m/Y',
-      allowInput: true,
-      defaultDate: new Date(),
-      monthSelectorType: 'dropdown',
-      wrap: false,
-      disableMobile: false
-    });
-  } else {
-    // fallback: keep text input + manual parsing
-  }
+  if (!window.flatpickr) return null;
+  const fp = window.flatpickr(inputEl, {
+    dateFormat: 'd/m/Y',
+    altInput: true,
+    altFormat: 'd/m/Y',
+    allowInput: true,
+    defaultDate: null,             // let us control it
+    monthSelectorType: 'dropdown',
+    wrap: false,
+    appendTo: document.body,       // <— renders above dialog
+    disableMobile: false
+  });
+  return fp;
 }
