@@ -40,6 +40,40 @@ const els = {
   error: document.getElementById('add-error') || null,   // optional error text node
 };
 
+
+els.form?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  // Let browser do built-in validation first
+  if (!els.form.reportValidity()) return;
+
+  // Convert the local datetime (no timezone) to an ISO string for the DB
+  // Assuming your column is timestamptz or timestamp:
+  const whenLocal = els.when.value;               // e.g., "2025-11-04T19:05"
+  const whenISO = new Date(whenLocal).toISOString(); // "2025-11-04T18:05:00.000Z" (UTC)
+
+  try {
+    // TODO: grab the rest of your fields here (duration, notes, etc.)
+    // Example:
+    // const payload = { when: whenISO, duration_min: +els.duration.value, note: els.note.value };
+
+    // const { error } = await supabase.from('study_log').insert(payload);
+    // if (error) throw error;
+
+    // Clear form + errors after success
+    els.form.reset();
+    els.error && (els.error.textContent = '');
+
+    // Optionally refresh your list
+    // await refreshUI();
+  } catch (err) {
+    console.error(err);
+    if (els.error) els.error.textContent = 'Could not save. Check console.';
+    else alert('Could not save. Check console.');
+  }
+});
+
+
 // IMPORTANT: ensure the Now button is NOT a submit button in HTML:
 // <button id="btn-now" type="button">Now</button>
 
