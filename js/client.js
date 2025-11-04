@@ -80,3 +80,33 @@ export async function fetchLog() {
   if (error) throw error;
   return data || [];
 }
+
+// client.js (append these)
+export async function insertLog({ task, project, minutes, dateISO, notes }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  const payload = {
+    user_id: user.id,
+    task, project,
+    minutes: Number(minutes),
+    date: dateISO,       // 'YYYY-MM-DD'
+    notes: notes || null
+  };
+  const { data, error } = await supabase.from('study_log').insert(payload).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchAllForUser() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  const { data, error } = await supabase
+    .from('study_log')
+    .select('id, task, project, minutes, date, notes')
+    .eq('user_id', user.id)
+    .order('date', { ascending: false })
+    .order('id', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
