@@ -6,6 +6,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, APP } from './config.js';
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, detectSessionInUrl: true, autoRefreshToken: true }, //
 });
+window.supabase = supabase; // expose for debugging
 
 // Parse FIRST, then clean (if desired)
 (async () => {
