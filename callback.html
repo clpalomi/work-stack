@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <title>Signing you in…</title>
+  </head>
+  <body>
+    <noscript>This page requires JavaScript.</noscript>
+    <script type="module">
+      import { supabase } from './js/client.js'; // adjust path if needed
+
+      // detectSessionInUrl:true will parse the hash here and set the session.
+      // Give it a tick, then take the user back to the app.
+      (async () => {
+        try {
+          // Touch the session so the client finishes exchanging tokens if needed
+          await supabase.auth.getSession();
+        } catch (e) {
+          console.error('Auth callback error:', e);
+        } finally {
+          // Clean the hash from URL and go back to your home page
+          const target = sessionStorage.getItem('post_auth_redirect') 
+                       || 'https://clpalomi.github.io/work-stack/';
+          // Use replace so the callback isn’t left in history
+          window.location.replace(target);
+        }
+      })();
+    </script>
+  </body>
+</html>
