@@ -1,7 +1,11 @@
 // js/main.js
-import { supabase, getUser, fetchLog, signInWithGoogle, signOut } from './client.js';
-import { els, setSignedOutUI, setSignedInUI, setLoading, setEmpty, renderRows } from './ui.js';
+import { supabase, getUser, fetchLog, signInWithGoogle, signOut, fetchAllForUser, insertLog } from './client.js';
+import { els, setSignedOutUI, setSignedInUI, setLoading, setEmpty, renderRows, renderProjects,
+         toISO, todayISO, isoToDMY, initDatePicker } from './ui.js';
 import { OAUTH_REDIRECT_TO } from './config.js'; // <-- make sure this exists
+
+let CACHE_ROWS = [];
+let SHOW_NOTES = false;
 
 // tiny helper so addEventListener never crashes if an element is missing
 const on = (el, evt, fn) => el && el.addEventListener(evt, fn);
@@ -53,19 +57,128 @@ const on = (el, evt, fn) => el && el.addEventListener(evt, fn);
 
 
 async function refreshUI() {
+  const user = await getUser();
+  if (!user) {
+    setSignedOutUI();
+    return;
+  }
+  setSignedInUI(user.email);
+
   try {
-    const user = await getUser();
-    if (!user) return setSignedOutUI();
-    setSignedInUI(user.email);
     setLoading();
-    const data = await fetchLog();
-    if (!data?.length) return setEmpty('No entries yet. Start your first session!');
-    renderRows(data);
+    const data = await fetchAllForUser();
+    CACHE_ROWS = data;
+    if (!data.length) {
+      setEmpty('No entries yet. Start your first session!');
+      return;
+    }
+    renderRows(data, SHOW_NOTES);
+    renderProjects(data);
   } catch (err) {
     console.error(err);
     setEmpty('Could not load your log. Check RLS/policies.');
   }
 }
+window.addEventListener('load', refreshUI);
+
+// ===== Toolbar events =====
+if (els.btnAdd) {
+  els.btnAdd.addEventListener('click', () => {
+    els.entryForm.reset();
+    // Pre-fill date as today (dd/mm/yyyy)
+    const iso = todayISO();
+    const dmy = isoToDMY(iso);
+    els.fDate.value = dmy;
+    if (els.entryDialog?.showModal) els.entryDialog.showModal();
+  });
+}
+if (els.chkNotes) {
+  els.chkNotes.addEventListener('change', () => {
+    SHOW_NOTES = !!els.chkNotes.checked;
+    renderRows(CACHE_ROWS, SHOW_NOTES);
+  });
+}
+if (els.btnDownloadCsv) {
+  els.btnDownloadCsv.addEventListener('click', () => downloadCSV(CACHE_ROWS));
+}
+if (els.btnDownloadXlsx) {
+  els.btnDownloadXlsx.addEventListener('click', () => downloadXLSX(CACHE_ROWS));
+}
+
+// ===== Modal wiring =====
+if (els.btnToday) {
+  els.btnToday.addEventListener('click', () => {
+    const iso = todayISO();
+    els.fDate.value = isoToDMY(iso);
+  });
+}
+if (els.fDate) {
+  // Initialize compact calendar if Flatpickr loaded
+  initDatePicker(els.fDate);
+}
+
+if (els.entryForm) {
+  els.entryForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      const task = els.fTask.value.trim();
+      const project = els.fProject.value.trim();
+      const minutes = Number(els.fMinutes.value);
+      const dateISO = toISO(els.fDate.value.trim() || '');
+      const notes = els.fNotes.value.trim();
+
+      if (!task || !project || !minutes || !dateISO) {
+        alert('Please fill Task, Project, Minutes, and a valid Date (dd/mm/yyyy).');
+        return;
+      }
+      await insertLog({ task, project, minutes, dateISO, notes });
+      els.entryDialog?.close();
+      await refreshUI();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save. Please check your input and that you are signed in.');
+    }
+  });
+}
+
+// ===== Downloads =====
+function downloadCSV(rows) {
+  if (!rows?.length) { alert('No data to download.'); return; }
+  const header = ['Task','Project','Minutes','Date','Notes'];
+  const esc = s => `"${String(s??'').replace(/"/g,'""')}"`;
+  const csv = [
+    header.join(','),
+    ...rows.map(r => [
+      esc(r.task), esc(r.project), r.minutes, isoToDMY(r.date||''), esc(r.notes||'')
+    ].join(','))
+  ].join('\r\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'work_log.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadXLSX(rows) {
+  if (!rows?.length) { alert('No data to download.'); return; }
+  if (!window.XLSX) { alert('XLSX library not loaded.'); return; }
+  const data = rows.map(r => ({
+    Task: r.task ?? '',
+    Project: r.project ?? '',
+    Minutes: Number(r.minutes)||0,
+    Date: r.date ? isoToDMY(r.date) : '',
+    Notes: r.notes ?? ''
+  }));
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, 'Work Log');
+  XLSX.writeFile(wb, 'work_log.xlsx');
+}
+
+
 
 // Menu helpers
 function openMenu() {
