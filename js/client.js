@@ -72,7 +72,7 @@ export async function signOut() {
 export async function fetchLog() {
   // adjust table/columns if yours differ
   const { data, error } = await supabase
-    .from('study_log')
+    .from('work_log')
     .select('date, task, project, minutes, notes')
     .order('date', { ascending: false })
     .limit(APP.tableLimit);
@@ -92,7 +92,7 @@ export async function insertLog({ task, project, minutes, dateISO, notes }) {
     date: dateISO,       // 'YYYY-MM-DD'
     notes: notes || null
   };
-  const { data, error } = await supabase.from('study_log').insert(payload).select().single();
+  const { data, error } = await supabase.from('wokr_log').insert(payload).select().single();
   if (error) throw error;
   return data;
 }
@@ -101,7 +101,7 @@ export async function fetchAllForUser() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not signed in');
   const { data, error } = await supabase
-    .from('study_log')
+    .from('work_log')
     .select('id, task, project, minutes, date, notes')
     .eq('user_id', user.id)
     .order('date', { ascending: false })
