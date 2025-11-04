@@ -11,6 +11,12 @@
     <script type="module">
       import { supabase } from './js/client.js'; // adjust path if needed
 
+      const { data: { user } } = await supabase.auth.getUser();
+      document.body.textContent = user
+        ? `Signed in as ${user.email ?? user.id}. Redirecting…`
+        : 'Sign-in failed. Redirecting…';
+      setTimeout(() => location.replace('https://clpalomi.github.io/work-stack/'), 600);
+
       // detectSessionInUrl:true will parse the hash here and set the session.
       // Give it a tick, then take the user back to the app.
       (async () => {
