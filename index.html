@@ -34,7 +34,18 @@
     /* Keep flatpickr above dialog and menus (if you enable it) */
     .flatpickr-calendar { z-index: 9999 !important; }
 
-    .topbar{justify-content: center;position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px clamp(14px,3vw,24px);background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px) saturate(130%);border-bottom:1px solid var(--border)}
+  .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* <-- true centering */
+  padding: 14px clamp(14px, 3vw, 24px);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(6px) saturate(130%);
+  border-bottom: 1px solid var(--border);
+  }
     .brand{font-weight:800;letter-spacing:-.01em;font-size: clamp(22px, 3vw, 30px)}
     .sub{color:var(--muted);font-size:12px}
 
