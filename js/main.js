@@ -335,7 +335,7 @@ function wireAddEntryForm() {
       };
 
       try {
-        const { error } = await supabase.from('study_log').insert(payload);
+        const { error } = await supabase.from('work_log').insert(payload);
         if (error) throw error;
         // Refresh UI
         await refreshUI();
