@@ -46,6 +46,31 @@ const about = document.getElementById('about');
 const aboutBackdrop = document.getElementById('about-backdrop');
 const aboutClose = document.getElementById('about-close');
 
+// --- Date helpers ---
+function parseDateFlexible(str, inputEl) {
+  // 1) Native date input -> ISO yyyy-mm-dd
+  if (inputEl && inputEl.type === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(inputEl.value)) {
+    return new Date(inputEl.value + 'T00:00:00');
+  }
+  // 2) Text input -> dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy
+  const s = String(str || '').trim();
+  const m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if (!m) return null;
+  const dd = Number(m[1]), mm = Number(m[2]), yyyy = Number(m[3]);
+  const d = new Date(yyyy, mm - 1, dd);
+  const ok = d.getFullYear() === yyyy && (d.getMonth() + 1) === mm && d.getDate() === dd;
+  return ok ? d : null;
+}
+function toISODate(d) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+function toDDMMYYYY(d) {
+  // en-GB gives dd/mm/yyyy
+  return d.toLocaleDateString('en-GB');
+}
+
+
 // init date picker and keep a reference
 let fp = null;
 if (els.fDate) {
@@ -269,3 +294,77 @@ on(menuAbout, 'click', () => { openAbout(); closeMenu(); });
 on(aboutBackdrop, 'click', closeAbout);
 on(aboutClose, 'click', closeAbout);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAbout(); });
+
+
+function wireAddEntryForm() {
+  // Today button
+  if (els.dateToday && els.date) {
+    els.dateToday.addEventListener('click', () => {
+      const now = new Date();
+      // Show dd/mm/yyyy to the user if the field is text; if it's type=date, set its ISO value.
+      if (els.date.type === 'date') {
+        els.date.value = toISODate(now);
+      } else {
+        els.date.value = toDDMMYYYY(now);
+      }
+      els.date.dispatchEvent(new Event('input', { bubbles: true }));
+      els.date.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+
+
+  // Save button
+  if (els.save) {
+    els.save.addEventListener('click', async () => {
+      const task = (els.task?.value || '').trim();
+      const project = (els.project?.value || '').trim();
+      const minutes = Number(els.minutes?.value || NaN);
+      const dateStr = els.date?.value || '';
+      const d = parseDateFlexible(dateStr, els.date);
+
+      if (!task || !project || !Number.isFinite(minutes) || minutes <= 0 || !d) {
+        alert('Please fill Task, Project, Minutes, and a valid Date (dd/mm/yyyy).');
+        return;
+      }
+
+      const payload = {
+        task,
+        project,
+        minutes,
+        date: toISODate(d), // Supabase DATE/TIMESTAMP friendly
+      };
+
+      try {
+        const { error } = await supabase.from('study_log').insert(payload);
+        if (error) throw error;
+        // Refresh UI
+        await refreshUI();
+        // Optionally clear the form
+        els.task.value = '';
+        els.project.value = '';
+        els.minutes.value = '';
+        if (els.date.type === 'date') {
+          els.date.value = '';
+        } else {
+          els.date.value = '';
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Could not save your entry. Check your Supabase table columns and RLS policies.');
+      }
+    });
+  }
+
+  // Cancel button (just clears)
+  if (els.cancel) {
+    els.cancel.addEventListener('click', () => {
+      if (els.task) els.task.value = '';
+      if (els.project) els.project.value = '';
+      if (els.minutes) els.minutes.value = '';
+      if (els.date) els.date.value = '';
+    });
+  }
+}
+
+// Call this once on startup (after els are available)
+wireAddEntryForm();
