@@ -78,15 +78,6 @@ export function setEmpty(msg='No entries yet.') {
 // Date helpers
 // =====================
 
-const NOTE_PREVIEW_MAX = 160;
-function notePreview(text) {
-  if (!text) return '';
-  const clean = String(text).trim();
-  if (clean.length <= NOTE_PREVIEW_MAX) return clean;
-  return clean.slice(0, NOTE_PREVIEW_MAX) + ' … read more';
-}
-
-
 export function toISO(dmy) {
   const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec((dmy || '').trim());
   if (!m) return null;
@@ -139,7 +130,7 @@ export function isoToDMY(value) {
 // =====================
 // Table render (Task, Project, Minutes, Date, Notes?)
 // =====================
-export function renderRows(rows, showNotes = false) {
+export function renderRows(rows /*, showNotes = false (ignored) */) {
   if (!rows?.length) {
     setEmpty();
     return;
@@ -151,21 +142,40 @@ export function renderRows(rows, showNotes = false) {
       <th>Project</th>
       <th>Minutes</th>
       <th>Date</th>
-      ${showNotes ? '<th>Notes</th>' : ''}
     </tr></thead>`;
 
-  const body = rows.map(r => `
-    <tr>
-      <td>${escapeHtml(r.task ?? '')}</td>
-      <td>${escapeHtml(r.project ?? '')}</td>
-      <td>${Number(r.minutes) || 0}</td>
-      <td>${r.date ? isoToDMY(r.date) : ''}</td>
-      ${showNotes ? `<td>${escapeHtml(r.notes ?? '')}</td>` : ''}
-    </tr>`).join('');
+  const body = rows.map(r => {
+    const hasNote = !!(r.notes && String(r.notes).trim());
+    const preview = hasNote ? notePreview(r.notes) : '';
+    const full = hasNote ? String(r.notes).trim() : '';
+
+    return `
+      <tr
+        ${hasNote ? `class="has-note" data-note-preview="${escapeAttr(preview)}" data-note-full="${escapeAttr(full)}" data-has-more="${full.length > NOTE_PREVIEW_MAX ? '1' : '0'}"` : ''}
+      >
+        <td>${escapeHtml(r.task ?? '')}</td>
+        <td>${escapeHtml(r.project ?? '')}</td>
+        <td>${Number(r.minutes) || 0}</td>
+        <td>${r.date ? isoToDMY(r.date) : ''}</td>
+      </tr>`;
+  }).join('');
 
   if (els.tableWrap) {
     els.tableWrap.innerHTML = `<table class="table">${head}<tbody>${body}</tbody></table>`;
+
+    // Click "read more..." (we use row click when the note was truncated)
+    const noteRows = els.tableWrap.querySelectorAll('tbody tr.has-note');
+    noteRows.forEach(tr => {
+      tr.addEventListener('click', (e) => {
+        // Skip if user clicked an interactive control inside the row
+        if (e.target.closest('button, a, input, textarea, select')) return;
+        if (tr.dataset.hasMore === '1') {
+          alert(tr.dataset.noteFull); // swap for a nicer modal anytime
+        }
+      });
+    });
   }
+
   if (els.count) {
     const n = rows.length;
     els.count.textContent = `${n} entr${n === 1 ? 'y' : 'ies'}`;
@@ -177,6 +187,18 @@ function escapeHtml(s) {
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
 }
+
+const NOTE_PREVIEW_MAX = 160;
+
+function notePreview(text) {
+  if (!text) return '';
+  const clean = String(text).trim();
+  if (clean.length <= NOTE_PREVIEW_MAX) return clean;
+  return clean.slice(0, NOTE_PREVIEW_MAX) + ' … read more';
+}
+
+// For data-* attributes we reuse escapeHtml (it also escapes quotes)
+const escapeAttr = escapeHtml;
 
 // =====================
 // Project lanes
