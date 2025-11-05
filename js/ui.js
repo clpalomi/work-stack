@@ -78,6 +78,15 @@ export function setEmpty(msg='No entries yet.') {
 // Date helpers
 // =====================
 
+const NOTE_PREVIEW_MAX = 160;
+function notePreview(text) {
+  if (!text) return '';
+  const clean = String(text).trim();
+  if (clean.length <= NOTE_PREVIEW_MAX) return clean;
+  return clean.slice(0, NOTE_PREVIEW_MAX) + ' … read more';
+}
+
+
 export function toISO(dmy) {
   const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec((dmy || '').trim());
   if (!m) return null;
@@ -97,31 +106,26 @@ export function todayISO() {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10);
 }
 
+// Robust dd/mm/yyyy formatter for ISO strings, YYYY-MM-DD, Date objects, or already dd/mm/yyyy
 export function isoToDMY(value) {
-  // Accept Date, ISO string, "YYYY-MM-DD", or "dd/mm/yyyy"
   if (!value) return '';
-  // If already dd/mm/yyyy, just return it
   if (typeof value === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(value)) return value;
 
   let d;
   if (value instanceof Date) {
     d = value;
   } else if (typeof value === 'string') {
-    // Try ISO or YYYY-MM-DD
-    // Some backends return "2025-11-04T00:00:00+00:00"
-    const isoLike = /^\d{4}-\d{2}-\d{2}/.test(value);
-    if (isoLike) {
+    // ISO / YYYY-MM-DD first
+    if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
       d = new Date(value);
     } else {
-      // Fallback: try dd/mm/yyyy -> Date
+      // Try dd/mm/yyyy -> Date
       const m = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-      if (m) {
-        const [, dd, mm, yyyy] = m;
-        d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
-      } else {
-        d = new Date(value); // as a last resort
-      }
+      if (m) d = new Date(+m[3], +m[2] - 1, +m[1]);
+      else d = new Date(value);
     }
+  } else {
+    d = new Date(value);
   }
 
   if (!(d instanceof Date) || Number.isNaN(d.getTime())) return '';
