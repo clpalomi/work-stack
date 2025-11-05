@@ -163,17 +163,51 @@ export function renderRows(rows /*, showNotes = false (ignored) */) {
   if (els.tableWrap) {
     els.tableWrap.innerHTML = `<table class="table">${head}<tbody>${body}</tbody></table>`;
 
-    // Click "read more..." (we use row click when the note was truncated)
     const noteRows = els.tableWrap.querySelectorAll('tbody tr.has-note');
-    noteRows.forEach(tr => {
-      tr.addEventListener('click', (e) => {
-        // Skip if user clicked an interactive control inside the row
-        if (e.target.closest('button, a, input, textarea, select')) return;
-        if (tr.dataset.hasMore === '1') {
-          alert(tr.dataset.noteFull); // swap for a nicer modal anytime
-        }
-      });
-    });
+
+let noteEl = null;
+function showNote(text) {
+  removeNote();
+  noteEl = document.createElement('div');
+  noteEl.className = 'note-pop';
+  noteEl.textContent = text;
+  document.body.appendChild(noteEl);
+}
+function moveNote(x, y) {
+  if (!noteEl) return;
+  const margin = 12; // offset from cursor
+  const rect = noteEl.getBoundingClientRect();
+  let left = x + margin;
+  let top  = y + margin;
+  // keep on screen
+  const vw = window.innerWidth, vh = window.innerHeight;
+  if (left + rect.width > vw - 8) left = vw - rect.width - 8;
+  if (top + rect.height > vh - 8) top = vh - rect.height - 8;
+  noteEl.style.left = left + 'px';
+  noteEl.style.top  = top  + 'px';
+}
+function removeNote() {
+  if (noteEl && noteEl.parentNode) noteEl.parentNode.removeChild(noteEl);
+  noteEl = null;
+}
+
+noteRows.forEach(tr => {
+  tr.addEventListener('mouseenter', () => {
+    const preview = tr.dataset.notePreview || '';
+    if (preview) showNote(preview);
+  });
+  tr.addEventListener('mousemove', (e) => moveNote(e.clientX, e.clientY));
+  tr.addEventListener('mouseleave', removeNote);
+
+  // Click to expand only if truncated
+  tr.addEventListener('click', (e) => {
+    if (e.target.closest('button, a, input, textarea, select')) return;
+    if (tr.dataset.hasMore === '1') alert(tr.dataset.noteFull);
+  });
+});
+
+// Safety: remove tooltip if table updates or window scrolls
+window.addEventListener('scroll', removeNote, { passive:true });
   }
 
   if (els.count) {
