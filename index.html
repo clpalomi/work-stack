@@ -181,6 +181,57 @@
     }
     .task-card .label { text-align:center; font-size:.8rem; line-height:1.1; }
     .task-card .mins { font-size:.75rem; color:#9aa3b2; }
+
+    /* === Form stack (single column) — scoped to the dialog only === */
+    #entryDialog form#entryForm {
+      display: grid;
+      grid-template-columns: 1fr;       /* always one column on all screens */
+      gap: 14px;                        /* space between fields */
+      max-width: 720px;                 /* readable width on desktop */
+    }
+    #entryDialog form#entryForm > h3 { margin: 0 0 6px; }
+    #entryDialog form#entryForm > label {
+      display: block;
+      font-size: 0.95rem;
+      color: var(--muted);
+      line-height: 1.2;
+    }
+    #entryDialog form#entryForm > label > input,
+    #entryDialog form#entryForm > label > textarea,
+    #entryDialog form#entryForm > label > select {
+      display: block;
+      width: 100%;
+      margin-top: 6px;                  /* ensures label on its own line */
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--fg);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      box-sizing: border-box;
+    }
+    #entryDialog textarea#fNotes {
+      min-height: 96px;
+      resize: vertical;
+    }
+    /* Date row: input + Today button on one line */
+    #entryDialog .date-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+    #entryDialog #date-today {
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--fg);
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+    #entryDialog menu {
+      margin: 4px 0 0;
+    }
   </style>
 </head>
 <body>
@@ -258,7 +309,7 @@
       </label>
 
       <label>Date*
-        <div class="date-row" style="display:flex; gap:.5rem; align-items:center;">
+        <div class="date-row">
           <!-- type="date" uses native picker; JS also supports dd/mm/yyyy text -->
           <input id="date" type="date" placeholder="dd/mm/yyyy" />
           <button type="button" id="date-today">Today</button>
@@ -304,5 +355,22 @@
   <!-- App (modules load deferred) -->
   <script type="module" src="./js/ui.js" defer></script>
   <script type="module" src="./js/main.js" defer></script>
+
+  <!-- Tiny, conflict-free helper for the "Today" button -->
+  <script type="module">
+    const btn = document.getElementById('date-today');
+    const input = document.getElementById('date');
+    btn?.addEventListener('click', () => {
+      // Native <input type="date"> expects yyyy-mm-dd
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      input.value = `${yyyy}-${mm}-${dd}`;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      input.focus();
+    });
+  </script>
 </body>
 </html>
