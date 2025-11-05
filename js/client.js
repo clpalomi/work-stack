@@ -92,7 +92,7 @@ export async function insertLog({ task, project, minutes, dateISO, notes }) {
     date: dateISO,       // 'YYYY-MM-DD'
     notes: notes || null
   };
-  const { data, error } = await supabase.from('wokr_log').insert(payload).select().single();
+  const { data, error } = await supabase.from('work_log').insert(payload).select().single();
   if (error) throw error;
   return data;
 }
