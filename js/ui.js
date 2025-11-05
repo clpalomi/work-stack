@@ -307,18 +307,110 @@ function truncate(s, n) {
 // =====================
 // Date picker init
 // =====================
-export function initDatePicker(inputEl) {
-  if (!window.flatpickr) return null;
-  const fp = window.flatpickr(inputEl, {
-    dateFormat: 'd/m/Y',
-    altInput: true,
-    altFormat: 'd/m/Y',
-    allowInput: true,
-    defaultDate: null,             // let us control it
-    monthSelectorType: 'dropdown',
-    wrap: false,
-    appendTo: document.body,       // <— renders above dialog
-    disableMobile: false
-  });
-  return fp;
+export function initDatePicker(inputEl, { onPick } = {}) {
+  // inputEl: the <input> for date (dd/mm/yyyy)
+  // onPick(dateISO) is called when a date is chosen
+
+  // Create a single popover container once
+  let pop = document.querySelector('#datepicker-popover');
+  if (!pop) {
+    pop = document.createElement('div');
+    pop.id = 'datepicker-popover';
+    pop.className = 'datepicker-popover';
+    pop.hidden = true;
+    document.body.appendChild(pop);
+  }
+
+  // --- your calendar widget/markup (keep whatever you already use) ---
+  // For illustration we create a very simple calendar host element:
+  let cal = pop.querySelector('.calendar-host');
+  if (!cal) {
+    cal = document.createElement('div');
+    cal.className = 'calendar-host';
+    pop.appendChild(cal);
+    // TODO: mount your existing calendar into `cal`
+    // e.g., renderCalendar(cal, { onSelect: (dateISO) => pick(dateISO) })
+  }
+
+  let currentAnchor = null;
+
+  function placePopover(anchor) {
+    const r = anchor.getBoundingClientRect();
+    const margin = 8;
+    const popW = pop.offsetWidth || 280;
+    const popH = pop.offsetHeight || 320;
+
+    // Default below the input
+    let left = r.left;
+    let top = r.bottom + margin;
+
+    // If overflowing right, align to right edge of input
+    const overflowRight = left + popW > window.innerWidth - 8;
+    if (overflowRight) left = Math.max(8, r.right - popW);
+
+    // If not enough space below, flip above
+    const belowSpace = window.innerHeight - r.bottom;
+    const needFlip = belowSpace < popH + margin && r.top > popH + margin;
+    if (needFlip) {
+      top = r.top - popH - margin;
+      // move arrow
+      pop.style.setProperty('--arrow-top', `${popH - 4}px`);
+      pop.style.setProperty('--arrow-rotate', '225deg');
+      pop.style.setProperty('--arrow-border', '1px solid var(--border)');
+      pop.style.setProperty('--arrow-left', `${Math.min(24, Math.max(12, r.width/2 - 8))}px`);
+    } else {
+      pop.style.setProperty('--arrow-top', `-6px`);
+      pop.style.setProperty('--arrow-rotate', '45deg');
+      pop.style.setProperty('--arrow-left', `16px`);
+    }
+
+    // Apply
+    pop.style.left = `${Math.round(left)}px`;
+    pop.style.top = `${Math.round(top)}px`;
+  }
+
+  function open() {
+    currentAnchor = inputEl;
+    pop.hidden = false;
+    // Give it one frame so it has size for correct placement
+    requestAnimationFrame(() => {
+      placePopover(inputEl);
+    });
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onResize, { passive: true });
+    document.addEventListener('pointerdown', onDocDown);
+  }
+
+  function close() {
+    pop.hidden = true;
+    currentAnchor = null;
+    window.removeEventListener('scroll', onScroll, true);
+    window.removeEventListener('resize', onResize);
+    document.removeEventListener('pointerdown', onDocDown);
+  }
+
+  function onScroll() { if (!pop.hidden && currentAnchor) placePopover(currentAnchor); }
+  function onResize() { if (!pop.hidden && currentAnchor) placePopover(currentAnchor); }
+
+  function onDocDown(e) {
+    // close if clicking outside input and popover
+    if (e.target === inputEl || pop.contains(e.target)) return;
+    close();
+  }
+
+  // Hook input
+  inputEl.addEventListener('focus', open);
+  inputEl.addEventListener('click', open);
+
+  // When a date is chosen in your calendar, call:
+  function pick(dateISO) {
+    // Format dd/mm/yyyy for your UI if needed:
+    const [y, m, d] = dateISO.split('-');
+    inputEl.value = `${d}/${m}/${y}`;
+    onPick && onPick(dateISO);
+    close();
+  }
+
+  // Expose a minimal API if needed elsewhere
+  return { open, close, pick, popover: pop };
 }
