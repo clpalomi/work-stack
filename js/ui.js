@@ -45,25 +45,22 @@ export const els = {
 };
 
 export function setSignedOutUI() {
-  if (els.toolbar) els.toolbar.hidden = true;
-  if (els.tableWrap) els.tableWrap.innerHTML = '';
-  if (els.projectsWrap) els.projectsWrap.innerHTML = '';
-  if (els.count) els.count.textContent = '0 entries';
-
-  // menu state
-  if (els.menuSignin) els.menuSignin.hidden = false;
-  if (els.menuSignout) els.menuSignout.hidden = true;
-  if (els.who) els.who.textContent = '';
+  const login = document.getElementById('menu-login');
+  if (login) {
+    login.dataset.state = 'signed-out';
+    login.textContent = 'Sign in with Google';
+  }
+  // hide “My entries” etc. if you want
 }
 
-// Show/hide toolbars when signed in/out
 export function setSignedInUI(email) {
-  if (els.toolbar) els.toolbar.hidden = false;
-
-  // menu state
-  if (els.menuSignin) els.menuSignin.hidden = true;
-  if (els.menuSignout) els.menuSignout.hidden = false;
-  if (els.who) els.who.textContent = email || '';
+  const who = document.getElementById('who');
+  if (who) who.textContent = email || '';
+  const login = document.getElementById('menu-login');
+  if (login) {
+    login.dataset.state = 'signed-in';
+    login.textContent = 'Sign out';
+  }
 }
 
 export function setLoading() {
