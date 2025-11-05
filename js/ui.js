@@ -8,6 +8,7 @@ export const els = {
   menuBtn:    document.getElementById('menu-btn'),
   menu:       document.getElementById('menu'),
   menuBackdrop: document.getElementById('menu-backdrop'),
+  menuLogin: document.getElementById('menu-login'),
   menuMy: document.getElementById('menu-my'),
   menuSignin: document.getElementById('menu-signin'),
   menuSignout: document.getElementById('menu-signout'),
@@ -32,6 +33,15 @@ export const els = {
   fDate: document.getElementById('fDate'),
   btnToday: document.getElementById('btnToday'),
   fNotes: document.getElementById('fNotes'),
+
+  // add-entry form controls
+  date: document.getElementById('date'),
+  dateToday: document.getElementById('date-today'),
+  task: document.getElementById('task'),
+  project: document.getElementById('project'),
+  minutes: document.getElementById('minutes'),
+  save: document.getElementById('save'),
+  cancel: document.getElementById('cancel'),
 };
 
 export function setSignedOutUI() {
