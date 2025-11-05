@@ -77,6 +77,7 @@ export function setEmpty(msg='No entries yet.') {
 // =====================
 // Date helpers
 // =====================
+
 export function toISO(dmy) {
   const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec((dmy || '').trim());
   if (!m) return null;
@@ -96,11 +97,40 @@ export function todayISO() {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10);
 }
 
-export function isoToDMY(iso) {
-  if (!iso) return '';
-  const [y, m, d] = iso.split('-');
-  return `${d}/${m}/${y}`;
+export function isoToDMY(value) {
+  // Accept Date, ISO string, "YYYY-MM-DD", or "dd/mm/yyyy"
+  if (!value) return '';
+  // If already dd/mm/yyyy, just return it
+  if (typeof value === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(value)) return value;
+
+  let d;
+  if (value instanceof Date) {
+    d = value;
+  } else if (typeof value === 'string') {
+    // Try ISO or YYYY-MM-DD
+    // Some backends return "2025-11-04T00:00:00+00:00"
+    const isoLike = /^\d{4}-\d{2}-\d{2}/.test(value);
+    if (isoLike) {
+      d = new Date(value);
+    } else {
+      // Fallback: try dd/mm/yyyy -> Date
+      const m = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (m) {
+        const [, dd, mm, yyyy] = m;
+        d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+      } else {
+        d = new Date(value); // as a last resort
+      }
+    }
+  }
+
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return '';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
 }
+
 
 // =====================
 // Table render (Task, Project, Minutes, Date, Notes?)
