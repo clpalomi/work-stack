@@ -54,7 +54,8 @@ export function setSignedOutUI() {
     login.dataset.state = 'signed-out';
     login.textContent = 'Sign in with Google';
   }
-  // hide “My entries” etc. if you want
+  if (els.toolbar) els.toolbar.hidden = true;
+  // hide “My entries” etc.
 }
 
 export function setSignedInUI(email) {
@@ -65,6 +66,7 @@ export function setSignedInUI(email) {
     login.dataset.state = 'signed-in';
     login.textContent = 'Sign out';
   }
+  if (els.toolbar) els.toolbar.hidden = false;
 }
 
 export function setLoading() {
