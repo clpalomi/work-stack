@@ -243,8 +243,32 @@ function getTopProjects(rows, limit = 5) {
 
 function populateProjectSuggestions(projects) {
   const datalist = document.getElementById('projectSuggestions');
+  const quickPicks = document.getElementById('projectQuickPicks');
   if (!datalist) return;
   datalist.innerHTML = projects.map((project) => `<option value="${escapeHtml(project)}"></option>`).join('');
+
+  if (!quickPicks) return;
+  if (!projects.length) {
+    quickPicks.innerHTML = '<div class="quick-picks-empty">No recent projects yet.</div>';
+    return;
+  }
+
+  quickPicks.innerHTML = projects.map((project) =>
+    `<button type="button" data-project="${escapeHtml(project)}">${escapeHtml(project)}</button>`
+  ).join('');
+
+  quickPicks.querySelectorAll('button[data-project]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (els.project) {
+        els.project.value = btn.dataset.project || '';
+        els.project.dispatchEvent(new Event('input', { bubbles: true }));
+        els.project.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (els.task && !String(els.task.value || '').trim()) {
+        els.task.value = 'working';
+      }
+    });
+  });
 }
 
 function escapeHtml(value) {
@@ -256,6 +280,7 @@ function escapeHtml(value) {
     "'": '&#39;'
   }[c]));
 }
+
 
 // ---------------- Menu & About ----------------
 // Support both patterns: a single #menu-login toggle, or #menu-signin and #menu-signout
