@@ -210,6 +210,26 @@
       font: inherit;
       box-sizing: border-box;
     }
+        #entryDialog .quick-picks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    #entryDialog .quick-picks button {
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--fg);
+      border-radius: 999px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: .85rem;
+    }
+    #entryDialog .quick-picks-empty {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: .85rem;
+    }
     #entryDialog textarea#fNotes {
       min-height: 96px;
       resize: vertical;
@@ -298,8 +318,9 @@
 
       <label>Project*
         <input id="project" list="projectSuggestions" required />
+        <div id="projectQuickPicks" class="quick-picks" aria-label="Top projects"></div>
       </label>
-       <datalist id="projectSuggestions"></datalist>
+      <datalist id="projectSuggestions"></datalist>
 
       <label>Task*
         <input id="task" required placeholder="working" />
