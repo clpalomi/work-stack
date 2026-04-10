@@ -271,7 +271,7 @@
     <button id="menu-my" class="menu-item" role="menuitem">My entries</button>
     <!-- Single toggle used by JS: sign in/out -->
     <button id="menu-login" class="menu-item" role="menuitem" data-state="signed-out">Sign in with Google</button>
-    <hr class="menu-sep"/>
+<hr class="menu-sep"/>
     <button id="menu-about" class="menu-item" role="menuitem">About</button>
   </div>
   <div id="menu-backdrop" class="menu-backdrop" hidden></div>
@@ -298,10 +298,15 @@
 
       <label>Task*
         <input id="task" required />
+      <label>Project*
+        <input id="project" list="projectSuggestions" required />
       </label>
+      <datalist id="projectSuggestions"></datalist>
 
       <label>Project*
         <input id="project" required />
+      <label>Task*
+        <input id="task" required placeholder="working" />
       </label>
 
       <label>Minutes*
