@@ -281,7 +281,7 @@
     #entryDialog menu {
       margin: 4px 0 0;
     }
-        #entryDialog #save {
+      #entryDialog #save {
       background: linear-gradient(180deg,var(--accent),var(--accent-2));
       color: #fff;
       border: 1px solid transparent;
@@ -296,6 +296,69 @@
       border-radius: 10px;
       padding: 10px 16px;
     }
+
+        /* === Calendar heatmap === */
+    .calendar-panel {
+      margin: 0 auto 14px;
+      width: 100%;
+      max-width: 980px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow-sm);
+      padding: 12px;
+    }
+    .calendar-panel[hidden] { display: none; }
+    .calendar-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .calendar-year-nav { display: flex; align-items: center; gap: 8px; }
+    .calendar-title { font-weight: 800; }
+    .calendar-close {
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--fg);
+      border-radius: 10px;
+      width: 34px;
+      height: 34px;
+      cursor: pointer;
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(60px, 1fr));
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .month-col { min-width: 60px; }
+    .month-name { font-size: .8rem; color: var(--muted); margin-bottom: 6px; text-align: center; }
+    .day-cell {
+      width: 100%;
+      height: 10px;
+      border-radius: 3px;
+      margin-bottom: 2px;
+      background: color-mix(in srgb, var(--surface-2) 90%, transparent);
+    }
+    .day-cell.is-empty { opacity: .25; }
+    .day-cell[data-level="1"] { background: color-mix(in srgb, var(--accent) 25%, var(--surface-2)); }
+    .day-cell[data-level="2"] { background: color-mix(in srgb, var(--accent) 45%, var(--surface-2)); }
+    .day-cell[data-level="3"] { background: color-mix(in srgb, var(--accent) 65%, var(--surface-2)); }
+    .day-cell[data-level="4"] { background: color-mix(in srgb, var(--accent) 85%, var(--surface-2)); }
+    .calendar-legend {
+      margin-top: 8px;
+      font-size: .8rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-box { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
+    
   </style>
 </head>
 <body>
@@ -325,6 +388,7 @@
     </label>
 
     <div class="download">
+      <button id="btnCalendar">Calendar</button>
       <button id="btnDownloadCsv">Download CSV</button>
       <button id="btnDownloadXlsx">Download XLSX</button>
     </div>
@@ -341,6 +405,18 @@
   <div id="menu-backdrop" class="menu-backdrop" hidden></div>
 
   <main class="shell" role="main">
+        <section id="calendarPanel" class="calendar-panel" hidden aria-label="Work sessions calendar">
+      <div class="calendar-head">
+        <div class="calendar-year-nav">
+          <button id="calendarPrevYear" type="button" aria-label="Previous year">↑</button>
+          <strong id="calendarYearLabel" class="calendar-title"></strong>
+          <button id="calendarNextYear" type="button" aria-label="Next year">↓</button>
+        </div>
+        <button id="calendarClose" class="calendar-close" type="button" aria-label="Close calendar">✕</button>
+      </div>
+      <div id="calendarGrid" class="calendar-grid"></div>
+      <div id="calendarLegend" class="calendar-legend"></div>
+    </section>
     <section class="card" aria-labelledby="log-title">
       <div class="card-h">
         <h1 id="log-title" class="card-t">Your work sessions</h1>
