@@ -30,6 +30,8 @@ const on = (el, evt, fn) => el && el.addEventListener(evt, fn);
 let CACHE_ROWS = [];
 let SHOW_NOTES = false;
 const AUTH_REDIRECT_TO = getAuthRedirectUrl();
+let CALENDAR_YEAR = new Date().getFullYear();
+let CALENDAR_OPEN = false;
 
 // Robust date reading: supports native <input type="date"> and dd/mm/yyyy text
 function readISODateFromInput(inputEl) {
@@ -67,6 +69,7 @@ async function refreshUI() {
     }
     renderRows(data, SHOW_NOTES);
     renderProjects(data);
+    if (CALENDAR_OPEN) renderCalendar(CACHE_ROWS, CALENDAR_YEAR);
   } catch (err) {
     console.error(err);
     setEmpty('Could not load your log. Check RLS/policies.');
@@ -108,6 +111,12 @@ on(els.chkNotes, 'change', () => {
 });
 
 on(els.btnDownloadCsv, 'click', () => downloadCSV(CACHE_ROWS));
+on(els.btnCalendar, 'click', () => {
+  CALENDAR_OPEN = true;
+  CALENDAR_YEAR = new Date().getFullYear();
+  openCalendar();
+  renderCalendar(CACHE_ROWS, CALENDAR_YEAR);
+});
 on(els.btnDownloadXlsx, 'click', () => downloadXLSX(CACHE_ROWS));
 
 // ---------------- Date picker (optional) ----------------
@@ -134,6 +143,25 @@ on(els.project, 'change', () => {
     els.task.value = 'working';
   }
 });
+
+const calendarPanel = document.getElementById('calendarPanel');
+const calendarGrid = document.getElementById('calendarGrid');
+const calendarLegend = document.getElementById('calendarLegend');
+const calendarYearLabel = document.getElementById('calendarYearLabel');
+const calendarPrevYear = document.getElementById('calendarPrevYear');
+const calendarNextYear = document.getElementById('calendarNextYear');
+const calendarClose = document.getElementById('calendarClose');
+
+on(calendarClose, 'click', closeCalendar);
+on(calendarPrevYear, 'click', () => {
+  CALENDAR_YEAR -= 1;
+  renderCalendar(CACHE_ROWS, CALENDAR_YEAR);
+});
+on(calendarNextYear, 'click', () => {
+  CALENDAR_YEAR += 1;
+  renderCalendar(CACHE_ROWS, CALENDAR_YEAR);
+});
+
 
 // ---------------- Form submit (single source of truth) ----------------
 on(els.entryForm, 'submit', async (e) => {
@@ -225,6 +253,78 @@ function downloadXLSX(rows) {
   const ws = XLSX.utils.json_to_sheet(data);
   XLSX.utils.book_append_sheet(wb, ws, 'Work Log');
   XLSX.writeFile(wb, 'work_log.xlsx');
+}
+
+function openCalendar() {
+  if (!calendarPanel) return;
+  calendarPanel.hidden = false;
+}
+
+function closeCalendar() {
+  CALENDAR_OPEN = false;
+  if (!calendarPanel) return;
+  calendarPanel.hidden = true;
+}
+
+function renderCalendar(rows, year) {
+  if (!calendarGrid || !calendarYearLabel) return;
+  calendarYearLabel.textContent = `Calendar ${year}`;
+  const minutesByDate = new Map();
+
+  for (const row of (rows || [])) {
+    if (!row?.date || !String(row.date).startsWith(`${year}-`)) continue;
+    const key = String(row.date).slice(0, 10);
+    minutesByDate.set(key, (minutesByDate.get(key) || 0) + (Number(row.minutes) || 0));
+  }
+
+  let maxMinutes = 0;
+  for (const mins of minutesByDate.values()) maxMinutes = Math.max(maxMinutes, mins);
+
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const today = new Date();
+  const isCurrentYear = today.getFullYear() === year;
+
+  calendarGrid.innerHTML = monthNames.map((name, monthIdx) => {
+    const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+    const cells = Array.from({ length: 31 }, (_, i) => {
+      const day = i + 1;
+      if (day > daysInMonth) return '<div class="day-cell is-empty"></div>';
+      const iso = `${year}-${String(monthIdx + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const mins = minutesByDate.get(iso) || 0;
+      const level = calcLevel(mins, maxMinutes);
+      return `<div class="day-cell" data-level="${level}" title="${iso}: ${mins} min"></div>`;
+    }).join('');
+
+    return `<div class="month-col" ${isCurrentYear && monthIdx === today.getMonth() ? 'id="calendarCurrentMonth"' : ''}>
+      <div class="month-name">${name}</div>
+      ${cells}
+    </div>`;
+  }).join('');
+
+  if (calendarLegend) {
+    calendarLegend.innerHTML = `
+      <span>Less</span>
+      <span class="legend-box day-cell" data-level="0"></span>
+      <span class="legend-box day-cell" data-level="1"></span>
+      <span class="legend-box day-cell" data-level="2"></span>
+      <span class="legend-box day-cell" data-level="3"></span>
+      <span class="legend-box day-cell" data-level="4"></span>
+      <span>More</span>
+    `;
+  }
+
+  if (isCurrentYear) {
+    document.getElementById('calendarCurrentMonth')?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+}
+
+function calcLevel(minutes, maxMinutes) {
+  if (!minutes || !maxMinutes) return 0;
+  const ratio = minutes / maxMinutes;
+  if (ratio <= 0.25) return 1;
+  if (ratio <= 0.5) return 2;
+  if (ratio <= 0.75) return 3;
+  return 4;
 }
 
 function getTopProjects(rows, limit = 5) {
