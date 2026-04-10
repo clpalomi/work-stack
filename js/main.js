@@ -58,7 +58,7 @@ async function refreshUI() {
 
   try {
     setLoading();
-const data = await fetchAllForUser();
+    const data = await fetchAllForUser();
     CACHE_ROWS = data;
     if (!data.length) {
       setEmpty('No entries yet. Start your first session!');
@@ -82,7 +82,7 @@ supabase.auth.onAuthStateChange((evt) => {
 // ---------------- Toolbar ----------------
 on(els.btnAdd, 'click', () => {
   els.entryForm?.reset?.();
-
+  
   const topProjects = getTopProjects(CACHE_ROWS, 5);
   populateProjectSuggestions(topProjects);
 
@@ -96,7 +96,7 @@ on(els.btnAdd, 'click', () => {
   }
 
   if (els.task) els.task.value = 'working';
-
+  
   els.entryDialog?.showModal?.();
   els.project?.focus?.();
 });
@@ -159,7 +159,48 @@ on(els.entryForm, 'submit', async (e) => {
 
     els.entryDialog?.close?.();
     await refreshUI();
-@@ -192,50 +204,80 @@ function downloadCSV(rows) {
+
+    // Clear fields for next use
+    if (els.task) els.task.value = '';
+    if (els.project) els.project.value = '';
+    if (els.minutes) els.minutes.value = '';
+    if (els.date) els.date.value = '';
+    if (els.fNotes) els.fNotes.value = '';
+
+  } catch (err) {
+    console.error(err);
+    alert('Failed to save. Please check your input and that you are signed in.');
+  }
+});
+
+// Save button simply submits the form
+on(els.save, 'click', () => {
+  if (els.entryForm?.requestSubmit) els.entryForm.requestSubmit();
+  else els.entryForm?.dispatchEvent?.(new Event('submit', { cancelable: true, bubbles: true }));
+});
+
+// Cancel button clears / closes
+on(els.cancel, 'click', () => {
+  els.entryForm?.reset?.();
+  els.entryDialog?.close?.();
+});
+
+// ---------------- Downloads ----------------
+function downloadCSV(rows) {
+  if (!rows?.length) { alert('No data to download.'); return; }
+  const header = ['Task','Project','Minutes','Date','Notes'];
+  const esc = s => `"${String(s ?? '').replace(/"/g,'""')}"`;
+  const csv = [
+    header.join(','),
+    ...rows.map(r => [
+      esc(r.task),
+      esc(r.project),
+      Number(r.minutes) || 0,
+      r.date ? isoToDMY(r.date) : '',
+      esc(r.notes || '')
+    ].join(','))
+  ].join('\r\n');
+
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
