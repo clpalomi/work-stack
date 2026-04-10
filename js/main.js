@@ -112,6 +112,10 @@ on(els.chkNotes, 'change', () => {
 
 on(els.btnDownloadCsv, 'click', () => downloadCSV(CACHE_ROWS));
 on(els.btnCalendar, 'click', () => {
+  if (CALENDAR_OPEN) {
+    closeCalendar();
+    return;
+  }
   CALENDAR_OPEN = true;
   CALENDAR_YEAR = new Date().getFullYear();
   openCalendar();
