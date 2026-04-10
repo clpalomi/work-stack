@@ -72,7 +72,48 @@ export function setLoading() {
 }
 
 export function setEmpty(msg='No entries yet.') {
-@@ -114,122 +117,142 @@ export function isoToDMY(value) {
+  if (els.tableWrap) els.tableWrap.innerHTML = `<p>${msg}</p>`;
+  if (els.projectsWrap) els.projectsWrap.innerHTML = '';
+  if (els.count) els.count.textContent = '0 entries';
+}
+
+// =====================
+// Date helpers
+// =====================
+
+export function toISO(dmy) {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec((dmy || '').trim());
+  if (!m) return null;
+  const [_, dd, mm, yyyy] = m;
+  const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+  if (isNaN(d)) return null;
+  const iso = d.toISOString().slice(0, 10);
+  // Check round-trip to guard against invalids like 31/02/2025
+  const back = new Date(iso);
+  if (back.getDate() !== Number(dd) || back.getMonth() !== Number(mm) - 1) return null;
+  return iso;
+}
+
+export function todayISO() {
+  const d = new Date();
+  // force local midnight to avoid TZ drift
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10);
+}
+
+// Robust dd/mm/yyyy formatter for ISO strings, YYYY-MM-DD, Date objects, or already dd/mm/yyyy
+export function isoToDMY(value) {
+  if (!value) return '';
+  if (typeof value === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(value)) return value;
+
+  let d;
+  if (value instanceof Date) {
+    d = value;
+  } else if (typeof value === 'string') {
+    // ISO / YYYY-MM-DD first
+    if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+      d = new Date(value);
+    } else {
+      // Try dd/mm/yyyy -> Date
       const m = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
       if (m) d = new Date(+m[3], +m[2] - 1, +m[1]);
       else d = new Date(value);
@@ -110,7 +151,7 @@ export function renderRows(rows /*, showNotes = false (ignored) */) {
       <th>Date</th>
     </tr></thead>`;
 
-  const body = visibleRows.map(r => {
+const body = visibleRows.map(r => {
     const hasNote = !!(r.notes && String(r.notes).trim());
     const preview = hasNote ? notePreview(r.notes) : '';
     const full = hasNote ? String(r.notes).trim() : '';
@@ -182,7 +223,6 @@ noteRows.forEach(tr => {
 
 // Safety: remove tooltip if table updates or window scrolls
 window.addEventListener('scroll', removeNote, { passive:true });
-
     const btnToggleSessions = document.getElementById('btnToggleSessions');
     if (btnToggleSessions) {
       btnToggleSessions.addEventListener('click', () => {
