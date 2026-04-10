@@ -58,7 +58,7 @@ async function refreshUI() {
 
   try {
     setLoading();
-    const data = await fetchAllForUser();
+const data = await fetchAllForUser();
     CACHE_ROWS = data;
     if (!data.length) {
       setEmpty('No entries yet. Start your first session!');
@@ -83,6 +83,9 @@ supabase.auth.onAuthStateChange((evt) => {
 on(els.btnAdd, 'click', () => {
   els.entryForm?.reset?.();
 
+  const topProjects = getTopProjects(CACHE_ROWS, 5);
+  populateProjectSuggestions(topProjects);
+
   // Pre-fill today's date
   if (els.date) {
     if (els.date.type === 'date') {
@@ -92,7 +95,10 @@ on(els.btnAdd, 'click', () => {
     }
   }
 
+  if (els.task) els.task.value = 'working';
+
   els.entryDialog?.showModal?.();
+  els.project?.focus?.();
 });
 
 on(els.chkNotes, 'change', () => {
@@ -122,6 +128,12 @@ on(els.dateToday, 'click', () => {
   els.date.dispatchEvent(new Event('change', { bubbles: true }));
 });
 
+on(els.project, 'change', () => {
+  if (els.task && !String(els.task.value || '').trim()) {
+    els.task.value = 'working';
+  }
+});
+
 // ---------------- Form submit (single source of truth) ----------------
 on(els.entryForm, 'submit', async (e) => {
   e.preventDefault();
@@ -147,48 +159,7 @@ on(els.entryForm, 'submit', async (e) => {
 
     els.entryDialog?.close?.();
     await refreshUI();
-
-    // Clear fields for next use
-    if (els.task) els.task.value = '';
-    if (els.project) els.project.value = '';
-    if (els.minutes) els.minutes.value = '';
-    if (els.date) els.date.value = '';
-    if (els.fNotes) els.fNotes.value = '';
-
-  } catch (err) {
-    console.error(err);
-    alert('Failed to save. Please check your input and that you are signed in.');
-  }
-});
-
-// Save button simply submits the form
-on(els.save, 'click', () => {
-  if (els.entryForm?.requestSubmit) els.entryForm.requestSubmit();
-  else els.entryForm?.dispatchEvent?.(new Event('submit', { cancelable: true, bubbles: true }));
-});
-
-// Cancel button clears / closes
-on(els.cancel, 'click', () => {
-  els.entryForm?.reset?.();
-  els.entryDialog?.close?.();
-});
-
-// ---------------- Downloads ----------------
-function downloadCSV(rows) {
-  if (!rows?.length) { alert('No data to download.'); return; }
-  const header = ['Task','Project','Minutes','Date','Notes'];
-  const esc = s => `"${String(s ?? '').replace(/"/g,'""')}"`;
-  const csv = [
-    header.join(','),
-    ...rows.map(r => [
-      esc(r.task),
-      esc(r.project),
-      Number(r.minutes) || 0,
-      r.date ? isoToDMY(r.date) : '',
-      esc(r.notes || '')
-    ].join(','))
-  ].join('\r\n');
-
+@@ -192,50 +204,80 @@ function downloadCSV(rows) {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -212,6 +183,36 @@ function downloadXLSX(rows) {
   const ws = XLSX.utils.json_to_sheet(data);
   XLSX.utils.book_append_sheet(wb, ws, 'Work Log');
   XLSX.writeFile(wb, 'work_log.xlsx');
+}
+
+function getTopProjects(rows, limit = 5) {
+  if (!rows?.length) return [];
+  const freq = new Map();
+  for (const row of rows) {
+    const project = String(row.project || '').trim();
+    if (!project) continue;
+    freq.set(project, (freq.get(project) || 0) + 1);
+  }
+  return Array.from(freq.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, limit)
+    .map(([project]) => project);
+}
+
+function populateProjectSuggestions(projects) {
+  const datalist = document.getElementById('projectSuggestions');
+  if (!datalist) return;
+  datalist.innerHTML = projects.map((project) => `<option value="${escapeHtml(project)}"></option>`).join('');
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[c]));
 }
 
 // ---------------- Menu & About ----------------
