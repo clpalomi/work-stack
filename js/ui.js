@@ -169,6 +169,11 @@ const body = visibleRows.map(r => {
 
   if (els.tableWrap) {
     const remaining = Math.max(0, totalRows - DEFAULT_VISIBLE_SESSIONS);
+    const summary = totalRows > DEFAULT_VISIBLE_SESSIONS
+      ? `<div style="padding:10px 12px 0; color: var(--muted); font-size: .85rem;">
+           ${SHOW_ALL_SESSIONS ? `Showing all ${totalRows} sessions` : `Showing latest ${DEFAULT_VISIBLE_SESSIONS} of ${totalRows} sessions`}
+         </div>`
+      : '';
     const toggleBtn = totalRows > DEFAULT_VISIBLE_SESSIONS
       ? `<div style="padding:10px 12px;">
            <button id="btnToggleSessions" type="button">
@@ -176,7 +181,7 @@ const body = visibleRows.map(r => {
            </button>
          </div>`
       : '';
-    els.tableWrap.innerHTML = `<table class="table">${head}<tbody>${body}</tbody></table>${toggleBtn}`;
+    els.tableWrap.innerHTML = `${summary}<table class="table">${head}<tbody>${body}</tbody></table>${toggleBtn}`;
 
     const noteRows = els.tableWrap.querySelectorAll('tbody tr.has-note');
 
