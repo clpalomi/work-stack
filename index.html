@@ -157,12 +157,33 @@
 
     /* ===== New toolbar + projects styles ===== */
     .toolbar { display:flex; gap:.75rem; align-items:center; margin:.75rem auto; width:100%; max-width:980px; padding:0 clamp(12px,3vw,24px); }
+        .toolbar button {
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--fg);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: transform .08s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    .toolbar button:hover {
+      border-color: color-mix(in srgb, var(--ring) 35%, var(--border));
+      box-shadow: 0 8px 20px rgba(0,0,0,.15);
+      transform: translateY(-1px);
+    }
+    .toolbar #btnAdd {
+      background: linear-gradient(180deg,var(--accent),var(--accent-2));
+      color: #fff;
+      border-color: transparent;
+    }
     .toolbar .download { display:flex; gap:.5rem; margin-left:auto; }
     .notes-toggle {display: none !important; }
 
     .table { width:100%; border-collapse:collapse; font-size:0.95rem; }
-    .table th, .table td { border-bottom:1px solid var(--border,#1f2937); padding:.5rem .6rem; }
+    .table th, .table td { border-bottom:1px solid var(--border,#1f2937); padding:.62rem .72rem; }
     .table th { text-align:left; font-weight:600; }
+    .table tbody tr:hover { background: color-mix(in srgb, var(--surface-2) 72%, transparent); }
 
     .project-lane { border:1px solid var(--border,#1f2937); border-radius:12px; padding:.75rem; background:var(--surface); }
     .project-lane h4 { margin:0 0 .5rem; font-size:1rem; display:flex; justify-content:space-between; }
@@ -209,6 +230,14 @@
       padding: 10px 12px;
       font: inherit;
       box-sizing: border-box;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    #entryDialog form#entryForm > label > input:focus,
+    #entryDialog form#entryForm > label > textarea:focus,
+    #entryDialog form#entryForm > label > select:focus {
+      outline: 0;
+      border-color: color-mix(in srgb, var(--ring) 55%, var(--border));
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 18%, transparent);
     }
         #entryDialog .quick-picks {
       display: flex;
@@ -251,6 +280,21 @@
     }
     #entryDialog menu {
       margin: 4px 0 0;
+    }
+        #entryDialog #save {
+      background: linear-gradient(180deg,var(--accent),var(--accent-2));
+      color: #fff;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-weight: 700;
+    }
+    #entryDialog #cancel {
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--fg);
+      border-radius: 10px;
+      padding: 10px 16px;
     }
   </style>
 </head>
