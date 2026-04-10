@@ -22,6 +22,7 @@ export const els = {
   btnAdd: document.getElementById('btnAdd'),
   chkNotes: document.getElementById('chkNotes'),
   btnDownloadCsv: document.getElementById('btnDownloadCsv'),
+  btnCalendar: document.getElementById('btnCalendar'),
   btnDownloadXlsx: document.getElementById('btnDownloadXlsx'),
   tableWrap: document.getElementById('tableWrap'),
   projectsWrap: document.getElementById('projectsWrap'),
