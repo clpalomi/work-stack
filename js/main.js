@@ -29,6 +29,7 @@ const on = (el, evt, fn) => el && el.addEventListener(evt, fn);
 
 let CACHE_ROWS = [];
 let SHOW_NOTES = false;
+const AUTH_REDIRECT_TO = getAuthRedirectUrl();
 
 // Robust date reading: supports native <input type="date"> and dd/mm/yyyy text
 function readISODateFromInput(inputEl) {
@@ -312,7 +313,7 @@ on(menuLogin, 'click', async () => {
       await signOut();
     } else {
       sessionStorage.setItem('post_auth_redirect', location.href);
-      await signInWithGoogle(OAUTH_REDIRECT_TO);
+      await signInWithGoogle(AUTH_REDIRECT_TO);
     }
   } catch (e) {
     console.error(e);
@@ -328,7 +329,7 @@ on(menuSignin, 'click', async () => {
   menuSignin.disabled = true;
   try {
     sessionStorage.setItem('post_auth_redirect', location.href);
-    await signInWithGoogle(OAUTH_REDIRECT_TO);
+    await signInWithGoogle(AUTH_REDIRECT_TO);
   } catch (e) {
     console.error(e);
     alert('Authentication failed. Confirm keys and redirect URLs in Supabase.');
@@ -337,6 +338,14 @@ on(menuSignin, 'click', async () => {
     closeMenu();
   }
 });
+
+function getAuthRedirectUrl() {
+  if (typeof window !== 'undefined' && window.location) {
+    return new URL('./callback.html', window.location.href).href;
+  }
+  return OAUTH_REDIRECT_TO;
+}
+
 
 on(menuSignout, 'click', async () => {
   menuSignout.disabled = true;
