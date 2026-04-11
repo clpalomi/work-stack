@@ -8,18 +8,6 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 window.supabase = supabase; // expose for debugging
 
-// Parse FIRST, then clean (if desired)
-(async () => {
-  const { data, error } = await supabase.auth.getSession(); // handles ?code&state or #access_token&state
-  console.log('[auth:init] getSession =>', { data, error });
-
-  // Only now is it safe to strip OAuth noise
-  if (location.hash || /[?&](error|access_token|code|state)=/.test(location.search)) {
-    history.replaceState({}, '', `${location.origin}${location.pathname}`);
-  }
-})();
-
-
 (async () => {
   console.log('[auth:init] href:', location.href);
   console.log('[auth:init] search:', location.search);
