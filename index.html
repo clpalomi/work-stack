@@ -184,6 +184,20 @@
     .table th, .table td { border-bottom:1px solid var(--border,#1f2937); padding:.62rem .72rem; }
     .table th { text-align:left; font-weight:600; }
     .table tbody tr:hover { background: color-mix(in srgb, var(--surface-2) 72%, transparent); }
+    .inline-toggle-btn {
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--fg);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    .inline-toggle-btn:hover {
+      border-color: color-mix(in srgb, var(--ring) 35%, var(--border));
+      box-shadow: 0 8px 16px rgba(0,0,0,.12);
+    }
 
     .project-lane { border:1px solid var(--border,#1f2937); border-radius:12px; padding:.75rem; background:var(--surface); }
     .project-lane h4 { margin:0 0 .5rem; font-size:1rem; display:flex; justify-content:space-between; }
@@ -239,7 +253,7 @@
       border-color: color-mix(in srgb, var(--ring) 55%, var(--border));
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 18%, transparent);
     }
-        #entryDialog .quick-picks {
+    #entryDialog .quick-picks {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -297,7 +311,7 @@
       padding: 10px 16px;
     }
 
-        /* === Calendar heatmap === */
+    /* === Calendar heatmap === */
     .calendar-panel {
       margin: 0 auto 14px;
       width: 100%;
