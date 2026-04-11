@@ -47,6 +47,7 @@ export const els = {
 
 let SHOW_ALL_SESSIONS = false;
 const DEFAULT_VISIBLE_SESSIONS = 5;
+let SHOW_ALL_PROJECTS = false;
 
 export function setSignedOutUI() {
   const login = document.getElementById('menu-login');
@@ -277,18 +278,27 @@ export function renderProjects(rows) {
     const proj = (r.project ?? '').trim() || '(no project)';
     const task = (r.task ?? '').trim() || '(untitled)';
     const mins = Number(r.minutes) || 0;
-    if (!byProject.has(proj)) byProject.set(proj, new Map());
-    const m = byProject.get(proj);
-    m.set(task, (m.get(task) || 0) + mins);
+    if (!byProject.has(proj)) byProject.set(proj, { tasks: new Map(), lastSeen: '' });
+    const bucket = byProject.get(proj);
+    bucket.tasks.set(task, (bucket.tasks.get(task) || 0) + mins);
+    const dateKey = String(r.date || '');
+    if (dateKey && (!bucket.lastSeen || dateKey > bucket.lastSeen)) bucket.lastSeen = dateKey;
   }
   const projects = Array.from(byProject.entries())
-    .map(([project, tasks]) => ({
+    .map(([project, meta]) => ({
       project,
-      tasks: Array.from(tasks.entries()).map(([task, mins]) => ({ task, mins }))
+      lastSeen: meta.lastSeen,
+      tasks: Array.from(meta.tasks.entries()).map(([task, mins]) => ({ task, mins }))
     }))
     .sort((a, b) => a.project.localeCompare(b.project));
+    .sort((a, b) => {
+      if (a.lastSeen !== b.lastSeen) return (b.lastSeen || '').localeCompare(a.lastSeen || '');
+      return a.project.localeCompare(b.project);
+    });
 
   const maxShow = 1; // show one lane by default (whether 1 or many)
+  const maxExpanded = Math.min(5, projects.length);
+  if (projects.length <= maxShow) SHOW_ALL_PROJECTS = false;
   const extra = Math.min(4, Math.max(0, projects.length - maxShow)); // up to 5 total
 
   const makeLane = (p) => {
@@ -313,20 +323,20 @@ export function renderProjects(rows) {
       </div>`;
   };
 
-  let html = makeLane(projects[0] ?? { project:'', tasks:[] });
+  const visibleProjects = SHOW_ALL_PROJECTS ? projects.slice(0, maxExpanded) : projects.slice(0, maxShow);
+  let html = visibleProjects.map(makeLane).join('');
   if (extra > 0) {
-    html += `<div><button id="btnMoreProjects">Show more projects (${extra})</button></div>`;
+    const btnLabel = SHOW_ALL_PROJECTS ? 'Show fewer projects' : `Show more projects (${extra})`;
+    html += `<div style="margin-top:8px;"><button id="btnMoreProjects" class="inline-toggle-btn" type="button">${btnLabel}</button></div>`;
   }
   els.projectsWrap.innerHTML = html;
 
-  // Reveal up to five lanes total
   const btnMore = document.getElementById('btnMoreProjects');
   if (btnMore) {
     btnMore.addEventListener('click', () => {
-      const more = projects.slice(1, 1 + Math.min(4, projects.length - 1))
-                           .map(makeLane).join('');
-      els.projectsWrap.innerHTML = makeLane(projects[0]) + more;
-    }, { once: true });
+            SHOW_ALL_PROJECTS = !SHOW_ALL_PROJECTS;
+      renderProjects(rows);
+    });
   }
 }
 
