@@ -29,7 +29,7 @@ const on = (el, evt, fn) => el && el.addEventListener(evt, fn);
 
 let CACHE_ROWS = [];
 let SHOW_NOTES = false;
-const AUTH_REDIRECT_TO = OAUTH_REDIRECT_TO;
+const AUTH_REDIRECT_TO = getAuthRedirectUrl();
 let CALENDAR_YEAR = new Date().getFullYear();
 let CALENDAR_OPEN = false;
 
@@ -165,6 +165,7 @@ on(calendarNextYear, 'click', () => {
   CALENDAR_YEAR += 1;
   renderCalendar(CACHE_ROWS, CALENDAR_YEAR);
 });
+
 
 // ---------------- Form submit (single source of truth) ----------------
 on(els.entryForm, 'submit', async (e) => {
