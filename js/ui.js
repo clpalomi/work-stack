@@ -179,7 +179,7 @@ const body = visibleRows.map(r => {
       : '';
     const toggleBtn = totalRows > DEFAULT_VISIBLE_SESSIONS
       ? `<div style="padding:10px 12px;">
-           <button id="btnToggleSessions" type="button">
+           <button id="btnToggleSessions" class="inline-toggle-btn" type="button">
              ${SHOW_ALL_SESSIONS ? 'Show fewer sessions' : `Show all sessions (+${remaining})`}
            </button>
          </div>`
@@ -277,19 +277,26 @@ export function renderProjects(rows) {
     const proj = (r.project ?? '').trim() || '(no project)';
     const task = (r.task ?? '').trim() || '(untitled)';
     const mins = Number(r.minutes) || 0;
-    if (!byProject.has(proj)) byProject.set(proj, new Map());
-    const m = byProject.get(proj);
+    const stamp = Date.parse(r.date || '') || 0;
+    if (!byProject.has(proj)) {
+      byProject.set(proj, { tasks: new Map(), latest: stamp });
+    }
+    const info = byProject.get(proj);
+    const m = info.tasks;
     m.set(task, (m.get(task) || 0) + mins);
+    info.latest = Math.max(info.latest || 0, stamp);
   }
   const projects = Array.from(byProject.entries())
-    .map(([project, tasks]) => ({
+    .map(([project, info]) => ({
       project,
-      tasks: Array.from(tasks.entries()).map(([task, mins]) => ({ task, mins }))
+      latest: info.latest || 0,
+      tasks: Array.from(info.tasks.entries()).map(([task, mins]) => ({ task, mins }))
     }))
-    .sort((a, b) => a.project.localeCompare(b.project));
+    .sort((a, b) => (b.latest - a.latest) || a.project.localeCompare(b.project));
 
   const maxShow = 1; // show one lane by default (whether 1 or many)
   const extra = Math.min(4, Math.max(0, projects.length - maxShow)); // up to 5 total
+  let showMoreProjects = false;
 
   const makeLane = (p) => {
     const pxPerMin = 0.5;                 // 60 mins -> 30px tall
@@ -313,21 +320,29 @@ export function renderProjects(rows) {
       </div>`;
   };
 
-  let html = makeLane(projects[0] ?? { project:'', tasks:[] });
-  if (extra > 0) {
-    html += `<div><button id="btnMoreProjects">Show more projects (${extra})</button></div>`;
-  }
-  els.projectsWrap.innerHTML = html;
+  const renderProjectSection = () => {
+    const first = projects[0] ?? { project:'', tasks:[] };
+    const more = projects.slice(1, 1 + Math.min(4, projects.length - 1)).map(makeLane).join('');
+    const visible = showMoreProjects ? (makeLane(first) + more) : makeLane(first);
+    const button = extra > 0
+      ? `<div style="padding-top:10px;">
+           <button id="btnToggleProjects" class="inline-toggle-btn" type="button">
+             ${showMoreProjects ? 'Show fewer projects' : `Show more projects (+${extra})`}
+           </button>
+         </div>`
+      : '';
+    els.projectsWrap.innerHTML = visible + button;
 
-  // Reveal up to five lanes total
-  const btnMore = document.getElementById('btnMoreProjects');
-  if (btnMore) {
-    btnMore.addEventListener('click', () => {
-      const more = projects.slice(1, 1 + Math.min(4, projects.length - 1))
-                           .map(makeLane).join('');
-      els.projectsWrap.innerHTML = makeLane(projects[0]) + more;
-    }, { once: true });
-  }
+    const toggle = document.getElementById('btnToggleProjects');
+    if (toggle) {
+      toggle.addEventListener('click', () => {
+        showMoreProjects = !showMoreProjects;
+        renderProjectSection();
+      });
+    }
+  };
+
+  renderProjectSection();
 }
 
 function truncate(s, n) {
