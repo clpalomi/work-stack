@@ -263,6 +263,15 @@ function notePreview(text) {
 
 // For data-* attributes we reuse escapeHtml (it also escapes quotes)
 const escapeAttr = escapeHtml;
+const FIVE_HOURS_MIN = 5 * 60;
+const HALF_HOUR_MIN = 30;
+
+function formatHHMM(totalMinutes) {
+  const mins = Math.max(0, Number(totalMinutes) || 0);
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
 
 // =====================
 // Project lanes
@@ -299,15 +308,19 @@ export function renderProjects(rows) {
   let showMoreProjects = false;
 
   const makeLane = (p) => {
-    const pxPerMin = 0.5;                 // 60 mins -> 30px tall
-    const step = Math.max(6, Math.round(30 * pxPerMin)); // coin step for 30 min
     const bars = p.tasks
       .sort((a, b) => b.mins - a.mins)
       .map(t => {
-        const h = Math.max(8, Math.round(t.mins * pxPerMin));
+        const fiveHourUnits = Math.floor(t.mins / FIVE_HOURS_MIN);
+        const remainder = t.mins % FIVE_HOURS_MIN;
+        const lightUnits = Math.ceil(remainder / HALF_HOUR_MIN);
+        const units = [
+          ...Array.from({ length: fiveHourUnits }, () => '<span class="unit dark" title="5h block"></span>'),
+          ...Array.from({ length: lightUnits }, () => '<span class="unit" title="30m block"></span>')
+        ].join('');
         return `
           <div class="task-card">
-            <div class="bar" style="height:${h}px; --step:${step}px;"></div>
+            <div class="bar">${units}</div>
             <div class="label" title="${escapeHtml(t.task)}">${escapeHtml(truncate(t.task, 12))}</div>
             <div class="mins">${t.mins}m</div>
           </div>`;
@@ -315,7 +328,7 @@ export function renderProjects(rows) {
     const total = p.tasks.reduce((s, t) => s + t.mins, 0);
     return `
       <div class="project-lane">
-        <h4><span>${escapeHtml(p.project)}</span><span>${total} min</span></h4>
+        <h4><span>${escapeHtml(p.project)}</span><span>${formatHHMM(total)}</span></h4>
         <div class="task-bar-row">${bars}</div>
       </div>`;
   };
