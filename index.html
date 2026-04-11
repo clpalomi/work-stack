@@ -142,18 +142,27 @@
     .modal-close:focus-visible{ outline:3px solid color-mix(in srgb, var(--ring) 60%, transparent); outline-offset:2px }
     .modal-backdrop{ position:fixed; inset:0; background: rgba(0,0,0,.3); z-index:50 }
 
-    /* Center the title and subtitle in the topbar */
-    .topbar > div:first-child { text-align: center; flex: 1; }
-    /* Absolutely position the right block so it doesn’t push content */
-    .topbar > div:last-child {
-    position: absolute;
-    right: clamp(14px, 3vw, 24px);
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    .topbar-title { text-align: center; flex: 1; }
+    .topbar-actions {
+      position: absolute;
+      right: clamp(14px, 3vw, 24px);
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     .brand { display: block; font-size: clamp(22px, 3vw, 30px); }
     .sub { display: block; margin-top: 2px; }
+    #who {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+      word-break: break-word;
+    }
+    @media (max-width: 640px) {
+      .topbar { padding-top: 12px; padding-bottom: 16px; }
+      .topbar-title { padding-inline: 52px; } /* keep room for hamburger */
+      #who { margin-top: 8px; margin-bottom: 8px; }
+    }
 
     /* ===== New toolbar + projects styles ===== */
     .toolbar { display:flex; gap:.75rem; align-items:center; margin:.75rem auto; width:100%; max-width:980px; padding:0 clamp(12px,3vw,24px); }
@@ -389,13 +398,13 @@
 </head>
 <body>
   <header class="topbar" role="banner">
-    <div>
+    <div class="topbar-title">
       <div class="brand">Work Log</div>
+      <div id="who" class="sub" aria-live="polite"></div>
       <div class="sub">Minimal • Focused</div>
     </div>
     <!-- Right controls: hamburger menu for auth -->
-    <div style="display:flex; align-items:center; gap:10px">
-      <div id="who" class="sub" aria-live="polite"></div>
+     <div class="topbar-actions">
       <button id="menu-btn" class="hamburger" aria-haspopup="menu" aria-expanded="false" aria-controls="menu" aria-label="Open menu">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M3 7h18M3 12h18M3 17h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
