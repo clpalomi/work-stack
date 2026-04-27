@@ -8,44 +8,13 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 window.supabase = supabase; // expose for debugging
 
-// Parse FIRST, then clean (if desired)
+// Parse auth session once, then clean URL noise.
 (async () => {
-  const { data, error } = await supabase.auth.getSession(); // handles ?code&state or #access_token&state
-  console.log('[auth:init] getSession =>', { data, error });
+    const { error } = await supabase.auth.getSession(); // handles ?code&state or #access_token&state
 
   // Only now is it safe to strip OAuth noise
-  if (location.hash || /[?&](error|access_token|code|state)=/.test(location.search)) {
+  if (!error && (location.hash || /[?&](error|access_token|code|state)=/.test(location.search))) {
     history.replaceState({}, '', `${location.origin}${location.pathname}`);
-  }
-})();
-
-
-(async () => {
-  console.log('[auth:init] href:', location.href);
-  console.log('[auth:init] search:', location.search);
-  console.log('[auth:init] hash:', location.hash);
-
-  try {
-    // PKCE return: ?code=...&state=...
-    if (/\bcode=/.test(location.search)) {
-      const { data, error } = await supabase.auth.exchangeCodeForSession(window.location.href);
-      console.log('[auth:init] exchangeCodeForSession', { data, error });
-      if (!error) history.replaceState({}, '', `${location.origin}${location.pathname}`);
-      return;
-    }
-
-    // Implicit return: #access_token=...&state=...
-    if (/\baccess_token=/.test(location.hash)) {
-      const { data, error } = await supabase.auth.getSession();
-      console.log('[auth:init] getSession (implicit)', { data, error });
-      if (!error) history.replaceState({}, '', `${location.origin}${location.pathname}`);
-      return;
-    }
-
-    // Normal load: no OAuth params
-    await supabase.auth.getSession();
-  } catch (e) {
-    console.error('[auth:init] OAuth parse failed', e);
   }
 })();
 
@@ -108,4 +77,22 @@ export async function fetchAllForUser() {
     .order('id', { ascending: false });
   if (error) throw error;
   return data ?? [];
+}
+
+export async function updateLogEntry(id, { task, project, minutes, dateISO, notes }) {
+  const payload = {
+    task: String(task || '').trim(),
+    project: String(project || '').trim(),
+    minutes: Number(minutes),
+    date: dateISO,
+    notes: notes ? String(notes).trim() : null
+  };
+  const { data, error } = await supabase
+    .from('work_log')
+    .update(payload)
+    .eq('id', id)
+    .select('id, task, project, minutes, date, notes')
+    .single();
+  if (error) throw error;
+  return data;
 }
