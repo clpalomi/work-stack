@@ -96,6 +96,8 @@ export async function fetchAllForUser() {
 }
 
 export async function updateLogEntry(id, { task, project, minutes, dateISO, notes }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
   const payload = {
     task: String(task || '').trim(),
     project: String(project || '').trim(),
@@ -107,6 +109,7 @@ export async function updateLogEntry(id, { task, project, minutes, dateISO, note
     .from('work_log')
     .update(payload)
     .eq('id', id)
+    .eq('user_id', user.id)
     .select('id, task, project, minutes, date, notes')
     .single();
   if (error) throw error;
@@ -114,10 +117,13 @@ export async function updateLogEntry(id, { task, project, minutes, dateISO, note
 }
 
 export async function deleteLogEntry(id) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
   const { error } = await supabase
     .from('work_log')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', user.id);
   if (error) throw error;
 }
 
