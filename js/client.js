@@ -112,3 +112,7 @@ export async function updateLogEntry(id, { task, project, minutes, dateISO, note
   if (error) throw error;
   return data;
 }
+
+// Backward-compatible alias for a previously mistyped import name.
+// This prevents runtime breakage if a stale/cached bundle still imports updateLogEntryg.
+export const updateLogEntryg = updateLogEntry;
