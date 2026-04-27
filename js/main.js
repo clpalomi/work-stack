@@ -6,7 +6,8 @@ import {
   signInWithGoogle,
   signOut,
   insertLog,
-  updateLogEntryg
+  updateLogEntry,
+  deleteLogEntry
 } from './client.js';
 
 import {
@@ -35,6 +36,15 @@ let CALENDAR_YEAR = new Date().getFullYear();
 let CALENDAR_OPEN = false;
 let EDITING_ID = null;
 let REFRESHING = null;
+
+function resetEntryDialog() {
+  EDITING_ID = null;
+  const title = els.entryDialog?.querySelector('h3');
+  if (title) title.textContent = 'Add work log';
+  if (els.save) els.save.textContent = 'Save';
+  if (els.cancel) els.cancel.textContent = 'Cancel';
+  if (els.deleteEntry) els.deleteEntry.hidden = true;
+}
 
 // Robust date reading: supports native <input type="date"> and dd/mm/yyyy text
 function readISODateFromInput(inputEl) {
@@ -97,6 +107,7 @@ supabase.auth.onAuthStateChange((evt) => {
 
 // ---------------- Toolbar ----------------
 on(els.btnAdd, 'click', () => {
+  resetEntryDialog();
   els.entryForm?.reset?.();
   
   const topProjects = getTopProjects(CACHE_ROWS, 5);
@@ -220,9 +231,7 @@ on(els.entryForm, 'submit', async (e) => {
 
     els.entryDialog?.close?.();
     await refreshUI();
-    EDITING_ID = null;
-    const title = els.entryDialog?.querySelector('h3');
-    if (title) title.textContent = 'Add work log';
+    resetEntryDialog();
 
     // Clear fields for next use
     if (els.task) els.task.value = '';
@@ -247,9 +256,22 @@ on(els.save, 'click', () => {
 on(els.cancel, 'click', () => {
   els.entryForm?.reset?.();
   els.entryDialog?.close?.();
-  EDITING_ID = null;
-  const title = els.entryDialog?.querySelector('h3');
-  if (title) title.textContent = 'Add work log';
+  resetEntryDialog();
+});
+
+on(els.deleteEntry, 'click', async () => {
+  if (!EDITING_ID) return;
+  if (!confirm('Delete this entry? This cannot be undone.')) return;
+
+  try {
+    await deleteLogEntry(EDITING_ID);
+    els.entryDialog?.close?.();
+    await refreshUI();
+    resetEntryDialog();
+  } catch (err) {
+    console.error(err);
+    alert('Failed to delete this entry. Please try again.');
+  }
 });
 
 // ---------------- Downloads ----------------
@@ -447,6 +469,9 @@ function openEditDialog(row) {
   refreshTaskSuggestions(row.project || '');
   const title = els.entryDialog?.querySelector('h3');
   if (title) title.textContent = 'Edit work log';
+  if (els.save) els.save.textContent = 'Save changes';
+  if (els.cancel) els.cancel.textContent = 'Discard';
+  if (els.deleteEntry) els.deleteEntry.hidden = false;
   els.entryDialog?.showModal?.();
 }
 
