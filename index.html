@@ -193,6 +193,23 @@
     .table th, .table td { border-bottom:1px solid var(--border,#1f2937); padding:.62rem .72rem; }
     .table th { text-align:left; font-weight:600; }
     .table tbody tr:hover { background: color-mix(in srgb, var(--surface-2) 72%, transparent); }
+    .table-scroll {
+      overflow-y: auto;
+      max-height: 520px;
+    }
+    .table .actions-col { width: 78px; text-align: right; }
+    .icon-btn {
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--fg);
+      border-radius: 8px;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: .88rem;
+      line-height: 1;
+    }
+    .row-actions { display:flex; justify-content:flex-end; gap:6px; }
+    .row-edit-input { width: 100%; min-width: 80px; }
     .inline-toggle-btn {
       border: 1px solid var(--border);
       background: var(--surface-2);
@@ -478,8 +495,9 @@
       <datalist id="projectSuggestions"></datalist>
 
       <label>Task*
-        <input id="task" required placeholder="working" />
+        <input id="task" list="taskSuggestions" required placeholder="working" />
       </label>
+      <datalist id="taskSuggestions"></datalist
 
       <label>Minutes*
         <input id="minutes" type="number" min="1" step="1" required />
