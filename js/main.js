@@ -5,7 +5,8 @@ import {
   fetchAllForUser,
   signInWithGoogle,
   signOut,
-  insertLog
+  insertLog,
+  updateLogEntryg
 } from './client.js';
 
 import {
@@ -32,6 +33,8 @@ let SHOW_NOTES = false;
 const AUTH_REDIRECT_TO = getAuthRedirectUrl();
 let CALENDAR_YEAR = new Date().getFullYear();
 let CALENDAR_OPEN = false;
+let EDITING_ID = null;
+let REFRESHING = null;
 
 // Robust date reading: supports native <input type="date"> and dd/mm/yyyy text
 function readISODateFromInput(inputEl) {
@@ -52,10 +55,12 @@ function readISODateFromInput(inputEl) {
 
 // ---------------- Auth state -> UI ----------------
 async function refreshUI() {
+  if (REFRESHING) return REFRESHING;
+  REFRESHING = (async () => {
   const user = await getUser();
   if (!user) {
     setSignedOutUI();
-    return;
+    return null;
   }
   setSignedInUI(user.email);
 
@@ -65,14 +70,21 @@ async function refreshUI() {
     CACHE_ROWS = data;
     if (!data.length) {
       setEmpty('No entries yet. Start your first session!');
-      return;
+      return null;
     }
-    renderRows(data, SHOW_NOTES);
+    renderRows(data, SHOW_NOTES, { onEdit: openEditDialog });
     renderProjects(data);
     if (CALENDAR_OPEN) renderCalendar(CACHE_ROWS, CALENDAR_YEAR);
   } catch (err) {
     console.error(err);
     setEmpty('Could not load your log. Check RLS/policies.');
+  }
+  return null;
+  })();
+  try {
+    await REFRESHING;
+  } finally {
+    REFRESHING = null;
   }
 }
 
@@ -100,6 +112,7 @@ on(els.btnAdd, 'click', () => {
   }
 
   if (els.task) els.task.value = 'working';
+  refreshTaskSuggestions(els.project?.value || '');
   
   els.entryDialog?.showModal?.();
   els.project?.focus?.();
@@ -107,7 +120,7 @@ on(els.btnAdd, 'click', () => {
 
 on(els.chkNotes, 'change', () => {
   SHOW_NOTES = !!els.chkNotes.checked;
-  renderRows(CACHE_ROWS, SHOW_NOTES);
+  renderRows(CACHE_ROWS, SHOW_NOTES, { onEdit: openEditDialog });
 });
 
 on(els.btnDownloadCsv, 'click', () => downloadCSV(CACHE_ROWS));
@@ -143,9 +156,20 @@ on(els.dateToday, 'click', () => {
 });
 
 on(els.project, 'change', () => {
+  refreshTaskSuggestions(els.project?.value || '');
   if (els.task && !String(els.task.value || '').trim()) {
     els.task.value = 'working';
   }
+});
+
+on(els.task, 'keydown', (e) => {
+  if (e.key !== 'Tab' || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return;
+  const tasks = getTasksForProject(els.project?.value || '');
+  const current = String(els.task?.value || '').trim().toLowerCase();
+  const match = tasks.find((task) => task.toLowerCase().startsWith(current || ''));
+  if (!match || match.toLowerCase() === current) return;
+  e.preventDefault();
+  els.task.value = match;
 });
 
 const calendarPanel = document.getElementById('calendarPanel');
@@ -188,10 +212,17 @@ on(els.entryForm, 'submit', async (e) => {
     }
 
     // IMPORTANT: insertLog expects { ... , dateISO }
-    await insertLog({ task, project, minutes, dateISO, notes });
+    if (EDITING_ID) {
+      await updateLogEntry(EDITING_ID, { task, project, minutes, dateISO, notes });
+    } else {
+      await insertLog({ task, project, minutes, dateISO, notes });
+    }
 
     els.entryDialog?.close?.();
     await refreshUI();
+    EDITING_ID = null;
+    const title = els.entryDialog?.querySelector('h3');
+    if (title) title.textContent = 'Add work log';
 
     // Clear fields for next use
     if (els.task) els.task.value = '';
@@ -216,6 +247,9 @@ on(els.save, 'click', () => {
 on(els.cancel, 'click', () => {
   els.entryForm?.reset?.();
   els.entryDialog?.close?.();
+  EDITING_ID = null;
+  const title = els.entryDialog?.querySelector('h3');
+  if (title) title.textContent = 'Add work log';
 });
 
 // ---------------- Downloads ----------------
@@ -373,6 +407,47 @@ function populateProjectSuggestions(projects) {
       }
     });
   });
+}
+
+function getTasksForProject(projectName) {
+  const key = String(projectName || '').trim().toLowerCase();
+  if (!key) return [];
+  const seen = new Set();
+  const tasks = [];
+  for (const row of CACHE_ROWS) {
+    if (String(row.project || '').trim().toLowerCase() !== key) continue;
+    const task = String(row.task || '').trim();
+    if (!task) continue;
+    const normalized = task.toLowerCase();
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    tasks.push(task);
+  }
+  return tasks;
+}
+
+function refreshTaskSuggestions(projectName) {
+  const datalist = document.getElementById('taskSuggestions');
+  if (!datalist) return;
+  const tasks = getTasksForProject(projectName);
+  datalist.innerHTML = tasks.map((task) => `<option value="${escapeHtml(task)}"></option>`).join('');
+}
+
+function openEditDialog(row) {
+  if (!row) return;
+  EDITING_ID = row.id;
+  if (els.project) els.project.value = row.project || '';
+  if (els.task) els.task.value = row.task || '';
+  if (els.minutes) els.minutes.value = Number(row.minutes) || '';
+  if (els.fNotes) els.fNotes.value = row.notes || '';
+  if (els.date) {
+    if (els.date.type === 'date') els.date.value = row.date || '';
+    else els.date.value = isoToDMY(row.date || '');
+  }
+  refreshTaskSuggestions(row.project || '');
+  const title = els.entryDialog?.querySelector('h3');
+  if (title) title.textContent = 'Edit work log';
+  els.entryDialog?.showModal?.();
 }
 
 function escapeHtml(value) {
