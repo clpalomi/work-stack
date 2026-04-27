@@ -43,6 +43,7 @@ export const els = {
   minutes: document.getElementById('minutes'),
   save: document.getElementById('save'),
   cancel: document.getElementById('cancel'),
+  deleteEntry: document.getElementById('delete-entry'),
 };
 
 let SHOW_ALL_SESSIONS = false;
