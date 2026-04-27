@@ -47,6 +47,7 @@ export const els = {
 
 let SHOW_ALL_SESSIONS = false;
 const DEFAULT_VISIBLE_SESSIONS = 5;
+const SHOW_ALL_VISIBLE_ROWS = 10;
 
 export function setSignedOutUI() {
   const login = document.getElementById('menu-login');
@@ -136,7 +137,7 @@ export function isoToDMY(value) {
 // =====================
 // Table render (Task, Project, Minutes, Date, Notes?)
 // =====================
-export function renderRows(rows /*, showNotes = false (ignored) */) {
+export function renderRows(rows, _showNotes = false, handlers = {}) {
   if (!rows?.length) {
     setEmpty();
     return;
@@ -152,6 +153,7 @@ export function renderRows(rows /*, showNotes = false (ignored) */) {
       <th>Project</th>
       <th>Minutes</th>
       <th>Date</th>
+      <th class="actions-col">Edit</th>
     </tr></thead>`;
 
 const body = visibleRows.map(r => {
@@ -167,6 +169,9 @@ const body = visibleRows.map(r => {
         <td>${escapeHtml(r.project ?? '')}</td>
         <td>${Number(r.minutes) || 0}</td>
         <td>${r.date ? isoToDMY(r.date) : ''}</td>
+        <td class="actions-col">
+          <button type="button" class="icon-btn" data-edit-id="${Number(r.id) || ''}" aria-label="Edit row">✏️</button>
+        </td>
       </tr>`;
   }).join('');
 
@@ -184,7 +189,19 @@ const body = visibleRows.map(r => {
            </button>
          </div>`
       : '';
-    els.tableWrap.innerHTML = `${summary}<table class="table">${head}<tbody>${body}</tbody></table>${toggleBtn}`;
+    const tableClass = SHOW_ALL_SESSIONS ? 'table-scroll' : '';
+    els.tableWrap.innerHTML = `${summary}<div class="${tableClass}"><table class="table">${head}<tbody>${body}</tbody></table></div>${toggleBtn}`;
+    if (SHOW_ALL_SESSIONS) {
+      const wrap = els.tableWrap.querySelector('.table-scroll');
+      const table = wrap?.querySelector('table');
+      const headRow = table?.querySelector('thead tr');
+      const rowsToMeasure = Array.from(table?.querySelectorAll('tbody tr') || []).slice(0, SHOW_ALL_VISIBLE_ROWS);
+      if (wrap && headRow && rowsToMeasure.length) {
+        const totalRowsHeight = rowsToMeasure.reduce((sum, tr) => sum + tr.getBoundingClientRect().height, 0);
+        const headHeight = headRow.getBoundingClientRect().height;
+        wrap.style.maxHeight = `${Math.ceil(totalRowsHeight + headHeight + 2)}px`;
+      }
+    }
 
     const noteRows = els.tableWrap.querySelectorAll('tbody tr.has-note');
 
@@ -231,11 +248,19 @@ noteRows.forEach(tr => {
 
 // Safety: remove tooltip if table updates or window scrolls
 window.addEventListener('scroll', removeNote, { passive:true });
+    els.tableWrap.querySelectorAll('button[data-edit-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = Number(btn.dataset.editId);
+        const row = rows.find((item) => Number(item.id) === id);
+        if (row && typeof handlers.onEdit === 'function') handlers.onEdit(row);
+      });
+    });
+    
     const btnToggleSessions = document.getElementById('btnToggleSessions');
     if (btnToggleSessions) {
       btnToggleSessions.addEventListener('click', () => {
         SHOW_ALL_SESSIONS = !SHOW_ALL_SESSIONS;
-        renderRows(rows);
+        renderRows(rows, _showNotes, handlers);
       });
     }
   }
