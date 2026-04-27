@@ -348,6 +348,14 @@
       border-radius: 10px;
       padding: 10px 16px;
     }
+    #entryDialog #delete-entry {
+      border: 1px solid color-mix(in srgb, #ef4444 45%, var(--border));
+      background: color-mix(in srgb, #ef4444 16%, var(--surface-2));
+      color: color-mix(in srgb, #ef4444 86%, var(--fg));
+      border-radius: 10px;
+      padding: 10px 16px;
+      margin-right: auto;
+    }
 
     /* === Calendar heatmap === */
     .calendar-panel {
@@ -517,6 +525,7 @@
       </label>
 
       <menu style="display:flex; gap:.5rem; justify-content:flex-end">
+        <button type="button" id="delete-entry" hidden>Delete</button>
         <button type="button" id="cancel">Cancel</button>
         <button type="button" id="save">Save</button>
       </menu>
