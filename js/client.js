@@ -8,14 +8,30 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 window.supabase = supabase; // expose for debugging
 
-// Parse auth session once, then clean URL noise.
+// Parse auth callback once (PKCE or implicit), then clean URL noise.
+// NOTE: Explicit code exchange is needed for some PKCE callback flows.
 (async () => {
-    const { error } = await supabase.auth.getSession(); // handles ?code&state or #access_token&state
+  try {
+    if (/\bcode=/.test(location.search)) {
+      const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+      if (!error) {
+        history.replaceState({}, '', `${location.origin}${location.pathname}`);
+      }
+      return;
+    }
+    
+    if (/\baccess_token=/.test(location.hash)) {
+            const { error } = await supabase.auth.getSession();
+      if (!error) {
+        history.replaceState({}, '', `${location.origin}${location.pathname}`);
+      }
+      return;
+    }
 
-  // Only now is it safe to strip OAuth noise
-  if (!error && (location.hash || /[?&](error|access_token|code|state)=/.test(location.search))) {
-    history.replaceState({}, '', `${location.origin}${location.pathname}`);
-  }
+    await supabase.auth.getSession();
+    } catch (e) {
+      console.error('[auth:init] failed to parse callback session', e);
+    }
 })();
 
 
