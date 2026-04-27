@@ -113,6 +113,14 @@ export async function updateLogEntry(id, { task, project, minutes, dateISO, note
   return data;
 }
 
+export async function deleteLogEntry(id) {
+  const { error } = await supabase
+    .from('work_log')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
 // Backward-compatible alias for a previously mistyped import name.
 // This prevents runtime breakage if a stale/cached bundle still imports updateLogEntryg.
 export const updateLogEntryg = updateLogEntry;
