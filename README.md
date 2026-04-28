@@ -5,5 +5,5 @@ Use this space to gently record focused sessions: what you worked on, what you d
 Visual display of different stacks of work
 
 ## To-do
-- Toolbar
 - Colors for categories
+- stats
