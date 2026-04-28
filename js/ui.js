@@ -154,7 +154,7 @@ export function renderRows(rows, _showNotes = false, handlers = {}) {
       <th>Project</th>
       <th>Minutes</th>
       <th>Date</th>
-      <th class="actions-col">Edit</th>
+      <th class="actions-col"> </th>
     </tr></thead>`;
 
 const body = visibleRows.map(r => {
