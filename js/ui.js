@@ -171,7 +171,7 @@ const body = visibleRows.map(r => {
         <td>${Number(r.minutes) || 0}</td>
         <td>${r.date ? isoToDMY(r.date) : ''}</td>
         <td class="actions-col">
-          <button type="button" class="icon-btn" data-edit-id="${Number(r.id) || ''}" aria-label="Edit row">✏️</button>
+          <button type="button" class="icon-btn" data-edit-id="${escapeAttr(r.id ?? '')}" aria-label="Edit row">✏️</button>
         </td>
       </tr>`;
   }).join('');
@@ -251,8 +251,8 @@ noteRows.forEach(tr => {
 window.addEventListener('scroll', removeNote, { passive:true });
     els.tableWrap.querySelectorAll('button[data-edit-id]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const id = Number(btn.dataset.editId);
-        const row = rows.find((item) => Number(item.id) === id);
+        const id = String(btn.dataset.editId || '').trim();
+        const row = rows.find((item) => String(item.id) === id);
         if (row && typeof handlers.onEdit === 'function') handlers.onEdit(row);
       });
     });
