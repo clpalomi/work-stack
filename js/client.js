@@ -82,15 +82,16 @@ export async function insertLog({ task, project, minutes, dateISO, notes }) {
   return data;
 }
 
-export async function fetchAllForUser() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
+export async function fetchAllForUser(userId) {
+  const resolvedUserId = userId || (await supabase.auth.getUser()).data.user?.id;
+  if (!resolvedUserId) throw new Error('Not signed in');
   const { data, error } = await supabase
     .from('work_log')
     .select('id, task, project, minutes, date, notes')
-    .eq('user_id', user.id)
+    .eq('user_id', resolvedUserId)
     .order('date', { ascending: false })
-    .order('id', { ascending: false });
+    .order('id', { ascending: false })
+    .limit(APP.tableLimit);
   if (error) throw error;
   return data ?? [];
 }
