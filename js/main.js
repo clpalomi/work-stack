@@ -76,7 +76,7 @@ async function refreshUI() {
 
   try {
     setLoading();
-    const data = await fetchAllForUser();
+    const data = await fetchAllForUser(user.id);
     CACHE_ROWS = data;
     if (!data.length) {
       setEmpty('No entries yet. Start your first session!');
