@@ -65,6 +65,102 @@
   backdrop-filter: blur(6px) saturate(130%);
   border-bottom: 1px solid var(--border);
   }
+    .topbar-left {
+      position: absolute;
+      left: clamp(10px, 2.5vw, 20px);
+      display: flex;
+      align-items: center;
+    }
+    .water-button {
+      width: clamp(64px, 10vw, 96px);
+      height: clamp(64px, 10vw, 96px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      padding: 0;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .water-button img {
+      width: 100%;
+      height: auto;
+      filter: blur(0.2px);
+      animation:
+        breathe 6s ease-in-out infinite,
+        rippleTilt 8s ease-in-out infinite;
+      transform-origin: center center;
+    }
+
+    /* subtle expansion/contraction */
+    @keyframes breathe {
+      0% {
+        transform: scale(1);
+        opacity: 0.96;
+      }
+
+      50% {
+        transform: scale(1.03);
+        opacity: 1;
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 0.96;
+      }
+    }
+
+    /* tiny perspective deformation */
+    @keyframes rippleTilt {
+      0% {
+        transform:
+          perspective(600px)
+          rotateX(1deg)
+          rotateY(-1deg)
+          scale(1);
+      }
+
+      50% {
+        transform:
+          perspective(600px)
+          rotateX(-1deg)
+          rotateY(1deg)
+          scale(1.03);
+      }
+
+      100% {
+        transform:
+          perspective(600px)
+          rotateX(1deg)
+          rotateY(-1deg)
+          scale(1);
+      }
+    }
+
+    .water-button::after {
+      content: "";
+      position: absolute;
+      inset: 15%;
+      border-radius: 50%;
+      border: 1px solid rgba(180,220,255,0.25);
+      animation: ring 5s linear infinite;
+    }
+
+    @keyframes ring {
+      0% {
+        transform: scale(0.8);
+        opacity: 0.4;
+      }
+
+      100% {
+        transform: scale(1.15);
+        opacity: 0;
+      }
+    }
     .brand{font-weight:800;letter-spacing:-.01em;font-size: clamp(22px, 3vw, 30px)}
     .sub{color:var(--muted);font-size:12px}
 
@@ -160,8 +256,12 @@
     }
     @media (max-width: 640px) {
       .topbar { padding-top: 12px; padding-bottom: 16px; }
-      .topbar-title { padding-inline: 52px; } /* keep room for hamburger */
+      .topbar-title { padding-inline: 64px; } /* keep room for left icon + hamburger */
       #who { margin-top: 8px; margin-bottom: 8px; }
+      .water-button {
+        width: 56px;
+        height: 56px;
+      }
     }
 
     /* ===== New toolbar + projects styles ===== */
@@ -423,6 +523,11 @@
 </head>
 <body>
   <header class="topbar" role="banner">
+    <div class="topbar-left" aria-hidden="true">
+      <button class="water-button" type="button" tabindex="-1">
+        <img src="./img/water-ripple.png" alt="" />
+      </button>
+    </div>
     <div class="topbar-title">
       <div class="brand">Work Log</div>
       <div id="who" class="sub" aria-live="polite"></div>
