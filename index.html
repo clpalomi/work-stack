@@ -355,6 +355,37 @@
     .task-card .label { text-align:center; font-size:.8rem; line-height:1.1; }
     .task-card .mins { font-size:.75rem; color:#9aa3b2; }
 
+    .projects-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .projects-card-h {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .projects-card-h h2 { margin: 0; font-size: 1rem; font-weight: 800; }
+    .project-summary-list { list-style: none; margin: 0; padding: 0; }
+    .project-summary-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .project-summary-item:last-child { border-bottom: 0; }
+    .project-summary-item strong { display: block; }
+    .project-summary-item small { display: block; color: var(--muted); margin-top: 3px; }
+    .project-summary-time { font-weight: 800; white-space: nowrap; }
+    .projects-empty { margin: 0; padding: 16px 18px; color: var(--muted); }
+
     /* === Form stack (single column) — scoped to the dialog only === */
     #entryDialog form#entryForm {
       display: grid;
@@ -562,6 +593,7 @@
   <!-- Flyout menu -->
   <div id="menu" class="menu" role="menu" aria-hidden="true">
     <button id="menu-my" class="menu-item" role="menuitem">My entries</button>
+    <button id="menu-projects" class="menu-item" role="menuitem">My projects</button>
     <!-- Single toggle used by JS: sign in/out -->
     <button id="menu-login" class="menu-item" role="menuitem" data-state="signed-out">Sign in with Google</button>
     <hr class="menu-sep"/>
