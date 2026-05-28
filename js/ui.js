@@ -10,6 +10,7 @@ export const els = {
   menuBackdrop: document.getElementById('menu-backdrop'),
   menuLogin: document.getElementById('menu-login'),
   menuMy: document.getElementById('menu-my'),
+  menuProjects: document.getElementById('menu-projects'),
   menuSignin: document.getElementById('menu-signin'),
   menuSignout: document.getElementById('menu-signout'),
   menuAbout: document.getElementById('menu-about'),
@@ -47,10 +48,13 @@ export const els = {
 };
 
 let SHOW_ALL_SESSIONS = false;
+let PROJECTS_PANEL_OPEN = false;
 const DEFAULT_VISIBLE_SESSIONS = 5;
 const SHOW_ALL_VISIBLE_ROWS = 10;
+const MAX_MENU_PROJECTS = 5;
 
 export function setSignedOutUI() {
+  PROJECTS_PANEL_OPEN = false;
   const login = document.getElementById('menu-login');
   if (login) {
     login.dataset.state = 'signed-out';
@@ -73,12 +77,18 @@ export function setSignedInUI(email) {
 
 export function setLoading() {
   if (els.tableWrap) els.tableWrap.innerHTML = '<p>Loading…</p>';
-  if (els.projectsWrap) els.projectsWrap.innerHTML = '';
+  if (els.projectsWrap) {
+    els.projectsWrap.innerHTML = '';
+    els.projectsWrap.hidden = true;
+  }
 }
 
 export function setEmpty(msg='No entries yet.') {
   if (els.tableWrap) els.tableWrap.innerHTML = `<p>${msg}</p>`;
-  if (els.projectsWrap) els.projectsWrap.innerHTML = '';
+  if (els.projectsWrap) {
+    els.projectsWrap.innerHTML = '';
+    els.projectsWrap.hidden = true;
+  }
   if (els.count) els.count.textContent = '0 entries';
 }
 
@@ -289,103 +299,95 @@ function notePreview(text) {
 
 // For data-* attributes we reuse escapeHtml (it also escapes quotes)
 const escapeAttr = escapeHtml;
-const FIVE_HOURS_MIN = 5 * 60;
-const HALF_HOUR_MIN = 30;
-
-function formatHHMM(totalMinutes) {
-  const mins = Math.max(0, Number(totalMinutes) || 0);
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
-
 // =====================
-// Project lanes
+// Project summary shown from the hamburger menu
 // =====================
 export function renderProjects(rows) {
   if (!els.projectsWrap) return;
-  if (!rows?.length) { els.projectsWrap.innerHTML = ''; return; }
 
-  // group minutes by project -> by task
-  const byProject = new Map();
-  for (const r of rows) {
-    const proj = (r.project ?? '').trim() || '(no project)';
-    const task = (r.task ?? '').trim() || '(untitled)';
-    const mins = Number(r.minutes) || 0;
-    const stamp = Date.parse(r.date || '') || 0;
-    if (!byProject.has(proj)) {
-      byProject.set(proj, { tasks: new Map(), latest: stamp });
-    }
-    const info = byProject.get(proj);
-    const m = info.tasks;
-    m.set(task, (m.get(task) || 0) + mins);
-    info.latest = Math.max(info.latest || 0, stamp);
+  const projects = getLatestProjects(rows, MAX_MENU_PROJECTS);
+
+  if (!PROJECTS_PANEL_OPEN) {
+    els.projectsWrap.hidden = true;
+    els.projectsWrap.innerHTML = '';
+    return;
   }
-  const projects = Array.from(byProject.entries())
-    .map(([project, info]) => ({
-      project,
-      latest: info.latest || 0,
-      tasks: Array.from(info.tasks.entries()).map(([task, mins]) => ({ task, mins }))
-    }))
-    .sort((a, b) => (b.latest - a.latest) || a.project.localeCompare(b.project));
 
-  const maxShow = 1; // show one lane by default (whether 1 or many)
-  const extra = Math.min(4, Math.max(0, projects.length - maxShow)); // up to 5 total
-  let showMoreProjects = false;
+  els.projectsWrap.hidden = false;
 
-  const makeLane = (p) => {
-    const bars = p.tasks
-      .sort((a, b) => b.mins - a.mins)
-      .map(t => {
-        const fiveHourUnits = Math.floor(t.mins / FIVE_HOURS_MIN);
-        const remainder = t.mins % FIVE_HOURS_MIN;
-        const lightUnits = Math.ceil(remainder / HALF_HOUR_MIN);
-        const units = [
-          ...Array.from({ length: fiveHourUnits }, () => '<span class="unit dark" title="5h block"></span>'),
-          ...Array.from({ length: lightUnits }, () => '<span class="unit" title="30m block"></span>')
-        ].join('');
-        return `
-          <div class="task-card">
-            <div class="bar">${units}</div>
-            <div class="label" title="${escapeHtml(t.task)}">${escapeHtml(truncate(t.task, 12))}</div>
-            <div class="mins">${t.mins}m</div>
-          </div>`;
-      }).join('');
-    const total = p.tasks.reduce((s, t) => s + t.mins, 0);
-    return `
-      <div class="project-lane">
-        <h4><span>${escapeHtml(p.project)}</span><span>${formatHHMM(total)}</span></h4>
-        <div class="task-bar-row">${bars}</div>
-      </div>`;
-  };
+  if (!projects.length) {
+    els.projectsWrap.innerHTML = `
+      <section class="projects-card" aria-labelledby="projects-title">
+        <div class="projects-card-h">
+          <h2 id="projects-title">My projects</h2>
+        </div>
+        <p class="projects-empty">No projects yet. Add a work session to see your latest projects here.</p>
+      </section>`;
+    return;
+  }
 
-  const renderProjectSection = () => {
-    const first = projects[0] ?? { project:'', tasks:[] };
-    const more = projects.slice(1, 1 + Math.min(4, projects.length - 1)).map(makeLane).join('');
-    const visible = showMoreProjects ? (makeLane(first) + more) : makeLane(first);
-    const button = extra > 0
-      ? `<div style="padding-top:10px;">
-           <button id="btnToggleProjects" class="inline-toggle-btn" type="button">
-             ${showMoreProjects ? 'Show fewer projects' : `Show more projects (+${extra})`}
-           </button>
-         </div>`
-      : '';
-    els.projectsWrap.innerHTML = visible + button;
+  const items = projects.map((project) => `
+    <li class="project-summary-item">
+      <span>
+        <strong>${escapeHtml(project.name)}</strong>
+        <small>Latest activity ${escapeHtml(isoToDMY(project.latestISO))}</small>
+      </span>
+      <span class="project-summary-time">${escapeHtml(formatDuration(project.minutes))}</span>
+    </li>
+  `).join('');
 
-    const toggle = document.getElementById('btnToggleProjects');
-    if (toggle) {
-      toggle.addEventListener('click', () => {
-        showMoreProjects = !showMoreProjects;
-        renderProjectSection();
-      });
-    }
-  };
-
-  renderProjectSection();
+  els.projectsWrap.innerHTML = `
+    <section class="projects-card" aria-labelledby="projects-title">
+      <div class="projects-card-h">
+        <h2 id="projects-title">My projects</h2>
+        <span class="badge">Latest ${projects.length}</span>
+      </div>
+      <ol class="project-summary-list">${items}</ol>
+    </section>`;
 }
 
-function truncate(s, n) {
-  return (s && s.length > n) ? s.slice(0, n - 1) + '…' : s;
+export function showProjects(rows) {
+  PROJECTS_PANEL_OPEN = true;
+  renderProjects(rows);
+  els.projectsWrap?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function getLatestProjects(rows, limit) {
+  const byProject = new Map();
+  for (const row of (rows || [])) {
+    const name = String(row.project || '').trim();
+    if (!name) continue;
+
+    const key = name.toLowerCase();
+    const minutes = Number(row.minutes) || 0;
+    const dateValue = String(row.date || '').slice(0, 10);
+    const latest = Date.parse(dateValue) || 0;
+
+    if (!byProject.has(key)) {
+      byProject.set(key, { name, minutes: 0, latest: 0, latestISO: dateValue });
+    }
+    
+    const project = byProject.get(key);
+    project.minutes += minutes;
+    if (latest >= project.latest) {
+      project.latest = latest;
+      project.latestISO = dateValue;
+      }
+  }
+
+  return Array.from(byProject.values())
+    .sort((a, b) => (b.latest - a.latest) || a.name.localeCompare(b.name))
+    .slice(0, limit);
+}
+
+function formatDuration(totalMinutes) {
+  const minutes = Math.max(0, Math.round(Number(totalMinutes) || 0));
+  if (minutes < 60) return `${minutes} min`;
+
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  const hourLabel = `${hours} hr${hours === 1 ? '' : 's'}`;
+  return remaining ? `${hourLabel} ${remaining} min` : hourLabel;
 }
 
 // =====================
