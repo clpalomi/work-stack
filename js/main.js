@@ -18,6 +18,7 @@ import {
   setEmpty,
   renderRows,
   renderProjects,
+  showProjects,
   toISO,        // expects dd/mm/yyyy -> yyyy-mm-dd
   todayISO,     // returns yyyy-mm-dd (today)
   isoToDMY,     // yyyy-mm-dd -> dd/mm/yyyy
@@ -492,6 +493,7 @@ const menuBtn       = document.getElementById('menu-btn');
 const menu          = document.getElementById('menu');
 const menuBackdrop  = document.getElementById('menu-backdrop');
 const menuMy        = document.getElementById('menu-my');
+const menuProjects  = document.getElementById('menu-projects');
 const menuAbout     = document.getElementById('menu-about');
 const about         = document.getElementById('about');
 const aboutBackdrop = document.getElementById('about-backdrop');
@@ -530,6 +532,11 @@ document.addEventListener('keydown', (e) => {
 
 on(menuMy, 'click', () => {
   document.getElementById('log-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  closeMenu();
+});
+
+on(menuProjects, 'click', () => {
+  showProjects(CACHE_ROWS);
   closeMenu();
 });
 
