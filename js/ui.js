@@ -442,7 +442,7 @@ function renderProjectTaskBreakdown(rows, project) {
           <div class="label">${escapeHtml(task.name)}</div>
           <div class="mins">${escapeHtml(formatDuration(task.minutes))}</div>
         </div>
-        <div class="bar" aria-label="${escapeAttr(`${formatDuration(task.minutes)} represented as horizontal project tokens`)}">${units}</div>
+        <div class="bar" aria-label="${escapeAttr(`${formatDuration(task.minutes)} represented as vertical project tokens`)}">${units}</div>
       </article>
     `;
   }).join('');
