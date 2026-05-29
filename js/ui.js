@@ -54,7 +54,9 @@ let ACTIVE_PROJECT_KEY = '';
 const DEFAULT_VISIBLE_SESSIONS = 5;
 const SHOW_ALL_VISIBLE_ROWS = 10;
 const MAX_MENU_PROJECTS = 5;
-const PROJECT_TOKEN_MINUTES = 15;
+const LIGHT_PROJECT_TOKEN_MINUTES = 30;
+const DARK_PROJECT_TOKEN_MINUTES = 300;
+const PARTIAL_PROJECT_TOKEN_STEP_MINUTES = LIGHT_PROJECT_TOKEN_MINUTES / 3;
 
 export function setSignedOutUI() {
   PROJECTS_PANEL_OPEN = false;
@@ -432,16 +434,15 @@ function renderProjectTaskBreakdown(rows, project) {
   }
 
   const taskCards = tasks.map((task) => {
-    const tokenCount = Math.max(1, Math.ceil(task.minutes / PROJECT_TOKEN_MINUTES));
-    const units = Array.from({ length: tokenCount }, (_, index) => (
-      `<span class="unit${index % 5 === 4 ? ' dark' : ''}" aria-hidden="true"></span>`
-    )).join('');
+    const units = renderProjectTimeTokens(task.minutes);
 
     return `
       <article class="task-card" title="${escapeAttr(`${task.name}: ${formatDuration(task.minutes)}`)}">
-        <div class="bar" aria-hidden="true">${units}</div>
-        <div class="label">${escapeHtml(task.name)}</div>
-        <div class="mins">${escapeHtml(formatDuration(task.minutes))}</div>
+        <div class="task-card-meta">
+          <div class="label">${escapeHtml(task.name)}</div>
+          <div class="mins">${escapeHtml(formatDuration(task.minutes))}</div>
+        </div>
+        <div class="bar" aria-label="${escapeAttr(`${formatDuration(task.minutes)} represented as horizontal project tokens`)}">${units}</div>
       </article>
     `;
   }).join('');
@@ -451,6 +452,31 @@ function renderProjectTaskBreakdown(rows, project) {
       <div class="task-bar-row">${taskCards}</div>
     </div>
   `;
+}
+
+function renderProjectTimeTokens(totalMinutes) {
+  const minutes = Math.max(0, Math.round(Number(totalMinutes) || 0));
+  const darkTokens = Math.floor(minutes / DARK_PROJECT_TOKEN_MINUTES);
+  let remainder = minutes % DARK_PROJECT_TOKEN_MINUTES;
+  const lightTokens = Math.floor(remainder / LIGHT_PROJECT_TOKEN_MINUTES);
+  remainder %= LIGHT_PROJECT_TOKEN_MINUTES;
+
+  const tokens = [
+    ...Array.from({ length: darkTokens }, () => '<span class="unit dark" aria-label="5 hours"></span>'),
+    ...Array.from({ length: lightTokens }, () => '<span class="unit light" aria-label="30 minutes"></span>'),
+  ];
+
+  if (remainder > 0) {
+    const thirds = Math.min(3, Math.max(1, Math.ceil(remainder / PARTIAL_PROJECT_TOKEN_STEP_MINUTES)));
+    const fill = `${(thirds / 3) * 100}%`;
+    tokens.push(`<span class="unit light partial partial-${thirds}" style="--fill:${fill}" aria-label="about ${thirds}/3 of 30 minutes"></span>`);
+  }
+
+  if (!tokens.length) {
+    tokens.push('<span class="unit light partial partial-1" style="--fill:33.333%" aria-label="less than 30 minutes"></span>');
+  }
+
+  return tokens.join('');
 }
 
 function getProjectTasks(rows, projectKey) {
