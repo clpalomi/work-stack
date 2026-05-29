@@ -49,12 +49,17 @@ export const els = {
 
 let SHOW_ALL_SESSIONS = false;
 let PROJECTS_PANEL_OPEN = false;
+let SHOW_ALL_PROJECTS = false;
+let ACTIVE_PROJECT_KEY = '';
 const DEFAULT_VISIBLE_SESSIONS = 5;
 const SHOW_ALL_VISIBLE_ROWS = 10;
 const MAX_MENU_PROJECTS = 5;
+const PROJECT_TOKEN_MINUTES = 15;
 
 export function setSignedOutUI() {
   PROJECTS_PANEL_OPEN = false;
+  SHOW_ALL_PROJECTS = false;
+  ACTIVE_PROJECT_KEY = '';
   const login = document.getElementById('menu-login');
   if (login) {
     login.dataset.state = 'signed-out';
@@ -305,7 +310,11 @@ const escapeAttr = escapeHtml;
 export function renderProjects(rows) {
   if (!els.projectsWrap) return;
 
-  const projects = getLatestProjects(rows, MAX_MENU_PROJECTS);
+  const allProjects = getLatestProjects(rows);
+  if (!allProjects.some((project) => project.key === ACTIVE_PROJECT_KEY)) {
+    ACTIVE_PROJECT_KEY = '';
+  }
+  const projects = SHOW_ALL_PROJECTS ? allProjects : allProjects.slice(0, MAX_MENU_PROJECTS);
 
   if (!PROJECTS_PANEL_OPEN) {
     els.projectsWrap.hidden = true;
@@ -315,7 +324,7 @@ export function renderProjects(rows) {
 
   els.projectsWrap.hidden = false;
 
-  if (!projects.length) {
+  if (!allProjects.length) {
     els.projectsWrap.innerHTML = `
       <section class="projects-card" aria-labelledby="projects-title">
         <div class="projects-card-h">
@@ -326,24 +335,60 @@ export function renderProjects(rows) {
     return;
   }
 
-  const items = projects.map((project) => `
-    <li class="project-summary-item">
-      <span>
-        <strong>${escapeHtml(project.name)}</strong>
-        <small>Latest activity ${escapeHtml(isoToDMY(project.latestISO))}</small>
-      </span>
-      <span class="project-summary-time">${escapeHtml(formatDuration(project.minutes))}</span>
-    </li>
-  `).join('');
+  const items = projects.map((project) => {
+    const isActive = project.key === ACTIVE_PROJECT_KEY;
+    const taskBreakdown = isActive ? renderProjectTaskBreakdown(rows, project) : '';
+    return `
+      <li class="project-summary-item${isActive ? ' is-active' : ''}">
+        <div class="project-summary-main">
+          <button type="button" class="project-name-btn" data-project-key="${escapeAttr(project.key)}" aria-expanded="${isActive ? 'true' : 'false'}">
+            ${escapeHtml(project.name)}
+          </button>
+          <small>Latest activity ${escapeHtml(isoToDMY(project.latestISO))}</small>
+        </div>
+        <span class="project-summary-time">${escapeHtml(formatDuration(project.minutes))}</span>
+        ${taskBreakdown}
+      </li>
+    `;
+  }).join('');
+
+  const hiddenCount = Math.max(0, allProjects.length - MAX_MENU_PROJECTS);
+  const showAllControl = hiddenCount > 0
+    ? `<div class="projects-card-actions">
+         <button id="btnToggleProjects" class="inline-toggle-btn" type="button">
+           ${SHOW_ALL_PROJECTS ? 'Show recent projects' : `Show all projects (+${hiddenCount})`}
+         </button>
+       </div>`
+    : '';
+  const badgeLabel = SHOW_ALL_PROJECTS
+    ? `All ${allProjects.length}`
+    : `Latest ${projects.length}`;
 
   els.projectsWrap.innerHTML = `
     <section class="projects-card" aria-labelledby="projects-title">
       <div class="projects-card-h">
         <h2 id="projects-title">My projects</h2>
-        <span class="badge">Latest ${projects.length}</span>
+        <span class="badge">${escapeHtml(badgeLabel)}</span>
       </div>
       <ol class="project-summary-list">${items}</ol>
+      ${showAllControl}
     </section>`;
+
+  els.projectsWrap.querySelectorAll('button[data-project-key]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = String(btn.dataset.projectKey || '').trim();
+      ACTIVE_PROJECT_KEY = ACTIVE_PROJECT_KEY === key ? '' : key;
+      renderProjects(rows);
+    });
+  });
+
+  const btnToggleProjects = document.getElementById('btnToggleProjects');
+  if (btnToggleProjects) {
+    btnToggleProjects.addEventListener('click', () => {
+      SHOW_ALL_PROJECTS = !SHOW_ALL_PROJECTS;
+      renderProjects(rows);
+    });
+  }
 }
 
 export function showProjects(rows) {
@@ -352,7 +397,7 @@ export function showProjects(rows) {
   els.projectsWrap?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function getLatestProjects(rows, limit) {
+function getLatestProjects(rows, limit = Infinity) {
   const byProject = new Map();
   for (const row of (rows || [])) {
     const name = String(row.project || '').trim();
@@ -364,7 +409,7 @@ function getLatestProjects(rows, limit) {
     const latest = Date.parse(dateValue) || 0;
 
     if (!byProject.has(key)) {
-      byProject.set(key, { name, minutes: 0, latest: 0, latestISO: dateValue });
+      byProject.set(key, { key, name, minutes: 0, latest: 0, latestISO: dateValue });
     }
     
     const project = byProject.get(key);
@@ -372,12 +417,64 @@ function getLatestProjects(rows, limit) {
     if (latest >= project.latest) {
       project.latest = latest;
       project.latestISO = dateValue;
-      }
+    }
   }
 
   return Array.from(byProject.values())
     .sort((a, b) => (b.latest - a.latest) || a.name.localeCompare(b.name))
     .slice(0, limit);
+}
+
+function renderProjectTaskBreakdown(rows, project) {
+  const tasks = getProjectTasks(rows, project.key);
+  if (!tasks.length) {
+    return '<div class="project-task-breakdown"><p class="projects-empty">No tasks logged for this project yet.</p></div>';
+  }
+
+  const taskCards = tasks.map((task) => {
+    const tokenCount = Math.max(1, Math.ceil(task.minutes / PROJECT_TOKEN_MINUTES));
+    const units = Array.from({ length: tokenCount }, (_, index) => (
+      `<span class="unit${index % 5 === 4 ? ' dark' : ''}" aria-hidden="true"></span>`
+    )).join('');
+
+    return `
+      <article class="task-card" title="${escapeAttr(`${task.name}: ${formatDuration(task.minutes)}`)}">
+        <div class="bar" aria-hidden="true">${units}</div>
+        <div class="label">${escapeHtml(task.name)}</div>
+        <div class="mins">${escapeHtml(formatDuration(task.minutes))}</div>
+      </article>
+    `;
+  }).join('');
+
+  return `
+    <div class="project-task-breakdown" aria-label="Blue token accumulation by task for ${escapeAttr(project.name)}">
+      <div class="task-bar-row">${taskCards}</div>
+    </div>
+  `;
+}
+
+function getProjectTasks(rows, projectKey) {
+  const byTask = new Map();
+  for (const row of (rows || [])) {
+    if (String(row.project || '').trim().toLowerCase() !== projectKey) continue;
+
+    const name = String(row.task || 'Untitled task').trim() || 'Untitled task';
+    const key = name.toLowerCase();
+    const minutes = Number(row.minutes) || 0;
+    const dateValue = String(row.date || '').slice(0, 10);
+    const latest = Date.parse(dateValue) || 0;
+
+    if (!byTask.has(key)) {
+      byTask.set(key, { name, minutes: 0, latest });
+    }
+
+    const task = byTask.get(key);
+    task.minutes += minutes;
+    task.latest = Math.max(task.latest, latest);
+  }
+
+  return Array.from(byTask.values())
+    .sort((a, b) => (b.latest - a.latest) || b.minutes - a.minutes || a.name.localeCompare(b.name));
 }
 
 function formatDuration(totalMinutes) {
