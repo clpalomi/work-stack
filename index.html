@@ -327,33 +327,52 @@
 
     .project-lane { border:1px solid var(--border,#1f2937); border-radius:12px; padding:.75rem; background:var(--surface); }
     .project-lane h4 { margin:0 0 .5rem; font-size:1rem; display:flex; justify-content:space-between; }
-    .task-bar-row { display:flex; gap:.75rem; overflow-x:auto; padding-bottom:.25rem; }
-    .task-card { flex:0 0 auto; width:72px; display:flex; flex-direction:column; align-items:center; gap:.35rem; }
+    .task-bar-row { display:flex; flex-direction:column; gap:.75rem; overflow-x:auto; padding-bottom:.25rem; }
+    .task-card {
+      display:grid;
+      grid-template-columns:minmax(9rem, 1fr) minmax(0, 2fr);
+      align-items:center;
+      gap:.75rem;
+      min-width:0;
+    }
+    .task-card-meta { min-width:0; }
     .task-card .bar {
-      width:100%;
-      min-height: 28px;
+      min-height: 36px;
       border-radius:10px;
       background: color-mix(in srgb, var(--surface-2) 70%, transparent);
       border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
       display:flex;
-      flex-direction:column-reverse;
-      align-items:stretch;
+      flex-direction:row;
+      align-items:center;
       justify-content:flex-start;
-      gap:2px;
-      padding:4px;
+      gap:4px;
+      padding:5px;
       box-sizing:border-box;
+      overflow-x:auto;
     }
     .task-card .unit {
-      height:8px;
-      border-radius:6px;
+      flex:0 0 22px;
+      width:22px;
+      height:22px;
+      border-radius:999px;
       background: var(--bar,#7aa7ff);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.16);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.2), 0 1px 2px rgba(0,0,0,.16);
+    }
+    .task-card .unit.light {
+      background: color-mix(in srgb, var(--bar,#7aa7ff) 58%, #eaf3ff);
     }
     .task-card .unit.dark {
-      background: color-mix(in srgb, #2f5fcb 85%, #1f4fbf);
+      background: color-mix(in srgb, #2f5fcb 88%, #163b98);
     }
-    .task-card .label { text-align:center; font-size:.8rem; line-height:1.1; }
-    .task-card .mins { font-size:.75rem; color:#9aa3b2; }
+    .task-card .unit.partial {
+      background:
+        linear-gradient(90deg, color-mix(in srgb, var(--bar,#7aa7ff) 58%, #eaf3ff) 0 var(--fill), rgba(122,167,255,.16) var(--fill) 100%);
+    }
+    .task-card .label { font-size:.8rem; line-height:1.2; font-weight:700; overflow-wrap:anywhere; }
+    .task-card .mins { font-size:.75rem; color:#9aa3b2; margin-top:2px; }
+    @media (max-width: 640px) {
+      .task-card { grid-template-columns:1fr; align-items:stretch; }
+    }
 
     .projects-card {
       background: var(--surface);
