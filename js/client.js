@@ -10,7 +10,7 @@ window.supabase = supabase; // expose for debugging
 
 // Parse auth callback once (PKCE or implicit), then clean URL noise.
 // NOTE: Explicit code exchange is needed for some PKCE callback flows.
-(async () => {
+export const authReady = (async () => {
   try {
     if (/\bcode=/.test(location.search)) {
       const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
@@ -35,9 +35,14 @@ window.supabase = supabase; // expose for debugging
 })();
 
 
+export async function getSessionUser() {
+  await authReady;
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.user ?? null;
+}
+
 export async function getUser() {
-  const { data: { user } } = await supabase.auth.getUser();
-  return user ?? null;
+  return getSessionUser();
 }
 
 export async function signInWithGoogle(redirectTo) {
