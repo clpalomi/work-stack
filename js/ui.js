@@ -103,23 +103,29 @@ export function setEmpty(msg='No entries yet.') {
 // Date helpers
 // =====================
 
+function localDateToISO(date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export function toISO(dmy) {
   const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec((dmy || '').trim());
   if (!m) return null;
-  const [_, dd, mm, yyyy] = m;
-  const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
-  if (isNaN(d)) return null;
-  const iso = d.toISOString().slice(0, 10);
-  // Check round-trip to guard against invalids like 31/02/2025
-  const back = new Date(iso);
-  if (back.getDate() !== Number(dd) || back.getMonth() !== Number(mm) - 1) return null;
-  return iso;
+  const [, dd, mm, yyyy] = m;
+  const day = Number(dd);
+  const monthIndex = Number(mm) - 1;
+  const year = Number(yyyy);
+  const d = new Date(year, monthIndex, day);
+  if (Number.isNaN(d.getTime())) return null;
+  // Check round-trip to guard against invalids like 31/02/2025.
+  if (d.getFullYear() !== year || d.getMonth() !== monthIndex || d.getDate() !== day) return null;
+  return localDateToISO(d);
 }
 
 export function todayISO() {
-  const d = new Date();
-  // force local midnight to avoid TZ drift
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10);
+  return localDateToISO(new Date());
 }
 
 // Robust dd/mm/yyyy formatter for ISO strings, YYYY-MM-DD, Date objects, or already dd/mm/yyyy
@@ -132,8 +138,9 @@ export function isoToDMY(value) {
     d = value;
   } else if (typeof value === 'string') {
     // ISO / YYYY-MM-DD first
-    if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
-      d = new Date(value);
+    const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+      d = new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]));
     } else {
       // Try dd/mm/yyyy -> Date
       const m = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
