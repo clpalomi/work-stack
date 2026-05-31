@@ -9,13 +9,14 @@
   <body>
     <noscript>This page requires JavaScript.</noscript>
     <script type="module">
-      import { supabase } from './js/client.js'; // adjust path if needed
+      import { authReady, supabase } from './js/client.js'; // adjust path if needed
 
       // detectSessionInUrl:true will parse the hash here and set the session.
       // Give it a tick, then take the user back to the app.
       (async () => {
         try {
-          // Touch the session so the client finishes exchanging tokens if needed
+          // Wait for client.js to finish exchanging OAuth tokens, then read the session.
+          await authReady;
           await supabase.auth.getSession();
           const { data: { user } } = await supabase.auth.getUser();
           document.body.textContent = user
