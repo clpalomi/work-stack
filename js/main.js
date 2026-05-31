@@ -1,7 +1,7 @@
 // js/main.js
 import {
   supabase,
-  getUser,
+  getSessionUser,
   fetchAllForUser,
   signInWithGoogle,
   signOut,
@@ -37,6 +37,8 @@ let CALENDAR_YEAR = new Date().getFullYear();
 let CALENDAR_OPEN = false;
 let EDITING_ID = null;
 let REFRESHING = null;
+const ROW_CACHE_TTL_MS = 5 * 60 * 1000;
+const ROW_CACHE_PREFIX = 'workstack:rows:';
 
 function resetEntryDialog() {
   EDITING_ID = null;
@@ -65,30 +67,32 @@ function readISODateFromInput(inputEl) {
 }
 
 // ---------------- Auth state -> UI ----------------
-async function refreshUI() {
+async function refreshUI({ force = false } = {}) {
   if (REFRESHING) return REFRESHING;
   REFRESHING = (async () => {
-  const user = await getUser();
+  const user = await getSessionUser();
   if (!user) {
+    CACHE_ROWS = [];
     setSignedOutUI();
+    setEmpty('Sign in to load your log…');
     return null;
   }
   setSignedInUI(user.email);
 
-  try {
+  const cachedRows = readRowsCache(user.id);
+  if (cachedRows && !force) {
+    paintRows(cachedRows);
+  } else {
     setLoading();
-    const data = await fetchAllForUser(user.id);
-    CACHE_ROWS = data;
-    if (!data.length) {
-      setEmpty('No entries yet. Start your first session!');
-      return null;
     }
-    renderRows(data, SHOW_NOTES, { onEdit: openEditDialog });
-    renderProjects(data);
-    if (CALENDAR_OPEN) renderCalendar(CACHE_ROWS, CALENDAR_YEAR);
+
+  try {
+    const data = await fetchAllForUser(user.id);
+    writeRowsCache(user.id, data);
+    paintRows(data);
   } catch (err) {
     console.error(err);
-    setEmpty('Could not load your log. Check RLS/policies.');
+    if (!cachedRows) setEmpty('Could not load your log. Check RLS/policies.');
   }
   return null;
   })();
@@ -96,6 +100,51 @@ async function refreshUI() {
     await REFRESHING;
   } finally {
     REFRESHING = null;
+  }
+}
+
+function paintRows(rows) {
+  CACHE_ROWS = rows || [];
+  if (!CACHE_ROWS.length) {
+    setEmpty('No entries yet. Start your first session!');
+    return;
+  }
+  renderRows(CACHE_ROWS, SHOW_NOTES, { onEdit: openEditDialog });
+  renderProjects(CACHE_ROWS);
+  if (CALENDAR_OPEN) renderCalendar(CACHE_ROWS, CALENDAR_YEAR);
+}
+
+function rowsCacheKey(userId) {
+  return `${ROW_CACHE_PREFIX}${userId}`;
+}
+
+function readRowsCache(userId) {
+  try {
+    const raw = sessionStorage.getItem(rowsCacheKey(userId));
+    if (!raw) return null;
+    const cached = JSON.parse(raw);
+    if (!cached || !Array.isArray(cached.rows)) return null;
+    if (Date.now() - Number(cached.savedAt || 0) > ROW_CACHE_TTL_MS) return null;
+    return cached.rows;
+  } catch {
+    return null;
+  }
+}
+
+function writeRowsCache(userId, rows) {
+  try {
+    sessionStorage.setItem(rowsCacheKey(userId), JSON.stringify({ savedAt: Date.now(), rows: rows || [] }));
+  } catch {
+    // Ignore storage quota/private-mode errors; the live fetch already succeeded.
+  }
+}
+
+function clearRowsCache(userId) {
+  if (!userId) return;
+  try {
+    sessionStorage.removeItem(rowsCacheKey(userId));
+  } catch {
+    // Ignore storage errors.
   }
 }
 
@@ -231,7 +280,8 @@ on(els.entryForm, 'submit', async (e) => {
     }
 
     els.entryDialog?.close?.();
-    await refreshUI();
+    clearRowsCache((await getSessionUser())?.id);
+    await refreshUI({ force: true });
     resetEntryDialog();
 
     // Clear fields for next use
@@ -542,10 +592,11 @@ on(menuProjects, 'click', () => {
 
 // Single toggle button
 on(menuLogin, 'click', async () => {
-  const user = await getUser();
+  const user = await getSessionUser();
   menuLogin.disabled = true;
   try {
     if (user) {
+      clearRowsCache(user?.id);
       await signOut();
     } else {
       sessionStorage.setItem('post_auth_redirect', location.href);
@@ -586,6 +637,8 @@ function getAuthRedirectUrl() {
 on(menuSignout, 'click', async () => {
   menuSignout.disabled = true;
   try {
+    const user = await getSessionUser();
+    clearRowsCache(user?.id);
     await signOut();
     sessionStorage.removeItem('post_auth_redirect');
   } catch (e) {
