@@ -51,6 +51,7 @@ let SHOW_ALL_SESSIONS = false;
 let PROJECTS_PANEL_OPEN = false;
 let SHOW_ALL_PROJECTS = false;
 let ACTIVE_PROJECT_KEY = '';
+let PROJECTS_FILTER_KEY = '';
 const DEFAULT_VISIBLE_SESSIONS = 5;
 const SHOW_ALL_VISIBLE_ROWS = 10;
 const MAX_MENU_PROJECTS = 5;
@@ -62,6 +63,7 @@ export function setSignedOutUI() {
   PROJECTS_PANEL_OPEN = false;
   SHOW_ALL_PROJECTS = false;
   ACTIVE_PROJECT_KEY = '';
+  PROJECTS_FILTER_KEY = '';
   const login = document.getElementById('menu-login');
   if (login) {
     login.dataset.state = 'signed-out';
@@ -191,7 +193,7 @@ const body = visibleRows.map(r => {
         ${hasNote ? `class="has-note" data-note-preview="${escapeAttr(preview)}" data-note-full="${escapeAttr(full)}" data-has-more="${full.length > NOTE_PREVIEW_MAX ? '1' : '0'}"` : ''}
       >
         <td>${escapeHtml(r.task ?? '')}</td>
-        <td>${escapeHtml(r.project ?? '')}</td>
+        <td>${renderTableProjectCell(r.project)}</td>
         <td>${Number(r.minutes) || 0}</td>
         <td>${r.date ? isoToDMY(r.date) : ''}</td>
         <td class="actions-col">
@@ -273,6 +275,14 @@ noteRows.forEach(tr => {
 
 // Safety: remove tooltip if table updates or window scrolls
 window.addEventListener('scroll', removeNote, { passive:true });
+    els.tableWrap.querySelectorAll('button[data-table-project-key]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = String(btn.dataset.tableProjectKey || '').trim();
+        const row = rows.find((item) => normalizeProjectKey(item.project) === key);
+        if (row && typeof handlers.onProject === 'function') handlers.onProject(row.project);
+      });
+    });
+    
     els.tableWrap.querySelectorAll('button[data-edit-id]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = String(btn.dataset.editId || '').trim();
@@ -294,6 +304,21 @@ window.addEventListener('scroll', removeNote, { passive:true });
     const n = rows.length;
     els.count.textContent = `${n} entr${n === 1 ? 'y' : 'ies'}`;
   }
+}
+
+function renderTableProjectCell(projectName) {
+  const name = String(projectName || '').trim();
+  if (!name) return '';
+
+  return `
+    <button type="button" class="table-project-btn" data-table-project-key="${escapeAttr(normalizeProjectKey(name))}" aria-label="Show project ${escapeAttr(name)}">
+      ${escapeHtml(name)}
+    </button>
+  `;
+}
+
+function normalizeProjectKey(projectName) {
+  return String(projectName || '').trim().toLowerCase();
 }
 
 function escapeHtml(s) {
@@ -320,10 +345,25 @@ export function renderProjects(rows) {
   if (!els.projectsWrap) return;
 
   const allProjects = getLatestProjects(rows);
+  const filteredProjects = PROJECTS_FILTER_KEY
+    ? allProjects.filter((project) => project.key === PROJECTS_FILTER_KEY)
+    : allProjects;
+
+  if (!allProjects.some((project) => project.key === PROJECTS_FILTER_KEY)) {
+    PROJECTS_FILTER_KEY = '';
+  }
   if (!allProjects.some((project) => project.key === ACTIVE_PROJECT_KEY)) {
     ACTIVE_PROJECT_KEY = '';
   }
-  const projects = SHOW_ALL_PROJECTS ? allProjects : allProjects.slice(0, MAX_MENU_PROJECTS);
+
+  const hasProjectFilter = !!PROJECTS_FILTER_KEY;
+  const projects = hasProjectFilter
+    ? filteredProjects
+    : (SHOW_ALL_PROJECTS ? allProjects : allProjects.slice(0, MAX_MENU_PROJECTS));
+  const title = hasProjectFilter ? 'Project details' : 'My projects';
+  const badgeLabel = hasProjectFilter
+    ? 'Selected project'
+    : (SHOW_ALL_PROJECTS ? `All ${allProjects.length}` : `Latest ${projects.length}`);
 
   if (!PROJECTS_PANEL_OPEN) {
     els.projectsWrap.hidden = true;
@@ -337,7 +377,7 @@ export function renderProjects(rows) {
     els.projectsWrap.innerHTML = `
       <section class="projects-card" aria-labelledby="projects-title">
         <div class="projects-card-h">
-          <h2 id="projects-title">My projects</h2>
+          <h2 id="projects-title">${escapeHtml(title)}</h2>
         </div>
         <p class="projects-empty">No projects yet. Add a work session to see your latest projects here.</p>
       </section>`;
@@ -362,21 +402,17 @@ export function renderProjects(rows) {
   }).join('');
 
   const hiddenCount = Math.max(0, allProjects.length - MAX_MENU_PROJECTS);
-  const showAllControl = hiddenCount > 0
+  const showAllControl = !hasProjectFilter && hiddenCount > 0
     ? `<div class="projects-card-actions">
          <button id="btnToggleProjects" class="inline-toggle-btn" type="button">
            ${SHOW_ALL_PROJECTS ? 'Show recent projects' : `Show all projects (+${hiddenCount})`}
          </button>
        </div>`
     : '';
-  const badgeLabel = SHOW_ALL_PROJECTS
-    ? `All ${allProjects.length}`
-    : `Latest ${projects.length}`;
-
   els.projectsWrap.innerHTML = `
     <section class="projects-card" aria-labelledby="projects-title">
       <div class="projects-card-h">
-        <h2 id="projects-title">My projects</h2>
+        <h2 id="projects-title">${escapeHtml(title)}</h2>
         <span class="badge">${escapeHtml(badgeLabel)}</span>
       </div>
       <ol class="project-summary-list">${items}</ol>
@@ -402,6 +438,18 @@ export function renderProjects(rows) {
 
 export function showProjects(rows) {
   PROJECTS_PANEL_OPEN = true;
+  PROJECTS_FILTER_KEY = '';
+  renderProjects(rows);
+  els.projectsWrap?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+export function showProject(rows, projectName) {
+  const key = normalizeProjectKey(projectName);
+  if (!key) return;
+
+  PROJECTS_PANEL_OPEN = true;
+  PROJECTS_FILTER_KEY = key;
+  ACTIVE_PROJECT_KEY = key;
   renderProjects(rows);
   els.projectsWrap?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -412,7 +460,7 @@ function getLatestProjects(rows, limit = Infinity) {
     const name = String(row.project || '').trim();
     if (!name) continue;
 
-    const key = name.toLowerCase();
+    const key = normalizeProjectKey(name);
     const minutes = Number(row.minutes) || 0;
     const dateValue = String(row.date || '').slice(0, 10);
     const latest = Date.parse(dateValue) || 0;
@@ -489,10 +537,10 @@ function renderProjectTimeTokens(totalMinutes) {
 function getProjectTasks(rows, projectKey) {
   const byTask = new Map();
   for (const row of (rows || [])) {
-    if (String(row.project || '').trim().toLowerCase() !== projectKey) continue;
+    if (normalizeProjectKey(row.project) !== projectKey) continue;
 
     const name = String(row.task || 'Untitled task').trim() || 'Untitled task';
-    const key = name.toLowerCase();
+    const key = normalizeProjectKey(name);
     const minutes = Number(row.minutes) || 0;
     const dateValue = String(row.date || '').slice(0, 10);
     const latest = Date.parse(dateValue) || 0;
