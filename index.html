@@ -198,6 +198,27 @@
       max-height: 520px;
     }
     .table .actions-col { width: 78px; text-align: right; }
+    .table-project-btn {
+      display: inline;
+      border: 0;
+      background: transparent;
+      color: var(--fg);
+      padding: 0;
+      font: inherit;
+      font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+      border-radius: 6px;
+      text-decoration: underline;
+      text-decoration-color: color-mix(in srgb, var(--accent) 55%, transparent);
+      text-underline-offset: 3px;
+    }
+    .table-project-btn:hover,
+    .table-project-btn:focus-visible {
+      color: var(--accent);
+      outline: 2px solid color-mix(in srgb, var(--ring) 45%, transparent);
+      outline-offset: 3px;
+    }
     .icon-btn {
       border: 1px solid var(--border);
       background: var(--surface-2);
