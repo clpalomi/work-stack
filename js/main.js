@@ -19,6 +19,7 @@ import {
   renderRows,
   renderProjects,
   showProjects,
+  showProject,
   toISO,        // expects dd/mm/yyyy -> yyyy-mm-dd
   todayISO,     // returns yyyy-mm-dd (today)
   isoToDMY,     // yyyy-mm-dd -> dd/mm/yyyy
@@ -109,9 +110,14 @@ function paintRows(rows) {
     setEmpty('No entries yet. Start your first session!');
     return;
   }
-  renderRows(CACHE_ROWS, SHOW_NOTES, { onEdit: openEditDialog });
+  renderRows(CACHE_ROWS, SHOW_NOTES, { onEdit: openEditDialog, onProject: openProjectFromTable });
   renderProjects(CACHE_ROWS);
   if (CALENDAR_OPEN) renderCalendar(CACHE_ROWS, CALENDAR_YEAR);
+}
+
+
+function openProjectFromTable(projectName) {
+  showProject(CACHE_ROWS, projectName);
 }
 
 function rowsCacheKey(userId) {
@@ -181,7 +187,7 @@ on(els.btnAdd, 'click', () => {
 
 on(els.chkNotes, 'change', () => {
   SHOW_NOTES = !!els.chkNotes.checked;
-  renderRows(CACHE_ROWS, SHOW_NOTES, { onEdit: openEditDialog });
+  renderRows(CACHE_ROWS, SHOW_NOTES, { onEdit: openEditDialog, onProject: openProjectFromTable });
 });
 
 on(els.btnDownloadCsv, 'click', () => downloadCSV(CACHE_ROWS));
