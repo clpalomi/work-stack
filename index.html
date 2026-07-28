@@ -345,6 +345,37 @@
     .project-task-breakdown { grid-column: 1 / -1; min-width: 0; }
     .projects-card-actions { padding: 14px 18px; border-top: 1px solid var(--border); }
     .projects-empty { margin: 0; padding: 16px 18px; color: var(--muted); }
+    .selected-project-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface-2) 55%, transparent);
+    }
+    .selected-project-actions span { color: var(--muted); font-size: .88rem; }
+    .add-project-entry-btn {
+      display: inline-grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      flex: 0 0 40px;
+      border: 0;
+      border-radius: 50%;
+      background: linear-gradient(180deg, var(--accent), var(--accent-2));
+      color: #fff;
+      box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 28%, transparent);
+      font-size: 1.6rem;
+      font-weight: 400;
+      line-height: 1;
+      cursor: pointer;
+      transition: transform .12s ease, box-shadow .15s ease;
+    }
+    .add-project-entry-btn:hover { transform: translateY(-1px) scale(1.03); }
+    .add-project-entry-btn:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--ring) 55%, transparent);
+      outline-offset: 3px;
+    }
 
     /* === Form stack (single column) — scoped to the dialog only === */
     #entryDialog form#entryForm {
@@ -360,6 +391,7 @@
       color: var(--muted);
       line-height: 1.2;
     }
+    #entryDialog form#entryForm > label[hidden] { display: none; }
     #entryDialog form#entryForm > label > input,
     #entryDialog form#entryForm > label > textarea,
     #entryDialog form#entryForm > label > select {
@@ -588,16 +620,16 @@
     <form method="dialog" id="entryForm">
       <h3>Add work log</h3>
 
-      <label>Project*
+      <label id="projectField">Project*
         <input id="project" list="projectSuggestions" required />
-        <div id="projectQuickPicks" class="quick-picks" aria-label="Top projects"></div>
+        <div id="projectQuickPicks" class="quick-picks" aria-label="Recently active projects"></div>
       </label>
       <datalist id="projectSuggestions"></datalist>
 
       <label>Task*
         <input id="task" list="taskSuggestions" required placeholder="working" />
       </label>
-      <datalist id="taskSuggestions"></datalist
+      <datalist id="taskSuggestions"></datalist>
 
       <label>Minutes*
         <input id="minutes" type="number" min="1" step="1" required />
