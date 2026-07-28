@@ -409,12 +409,19 @@ export function renderProjects(rows) {
          </button>
        </div>`
     : '';
+  const addEntryControl = hasProjectFilter && projects[0]
+    ? `<div class="selected-project-actions">
+         <button type="button" class="add-project-entry-btn" data-add-project-entry="${escapeAttr(projects[0].name)}" aria-label="Add a task to ${escapeAttr(projects[0].name)}" title="Add a task to this project">+</button>
+         <span>Add a task and minutes to this project</span>
+       </div>`
+    : '';
   els.projectsWrap.innerHTML = `
     <section class="projects-card" aria-labelledby="projects-title">
       <div class="projects-card-h">
         <h2 id="projects-title">${escapeHtml(title)}</h2>
         <span class="badge">${escapeHtml(badgeLabel)}</span>
       </div>
+      ${addEntryControl}
       <ol class="project-summary-list">${items}</ol>
       ${showAllControl}
     </section>`;
@@ -425,6 +432,13 @@ export function renderProjects(rows) {
       ACTIVE_PROJECT_KEY = ACTIVE_PROJECT_KEY === key ? '' : key;
       renderProjects(rows);
     });
+  });
+
+  els.projectsWrap.querySelector('button[data-add-project-entry]')?.addEventListener('click', (event) => {
+    els.projectsWrap.dispatchEvent(new CustomEvent('add-project-entry', {
+      bubbles: true,
+      detail: { project: event.currentTarget.dataset.addProjectEntry || '' }
+    }));
   });
 
   const btnToggleProjects = document.getElementById('btnToggleProjects');
