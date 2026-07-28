@@ -48,6 +48,14 @@ function resetEntryDialog() {
   if (els.save) els.save.textContent = 'Save';
   if (els.cancel) els.cancel.textContent = 'Cancel';
   if (els.deleteEntry) els.deleteEntry.hidden = true;
+  const projectField = document.getElementById('projectField');
+  if (projectField) projectField.hidden = false;
+  els.entryDialog?.removeAttribute('data-project-locked');
+}
+
+function setDefaultEntryDate() {
+  if (!els.date) return;
+  els.date.value = els.date.type === 'date' ? todayISO() : isoToDMY(todayISO());
 }
 
 // Robust date reading: supports native <input type="date"> and dd/mm/yyyy text
@@ -166,23 +174,36 @@ on(els.btnAdd, 'click', () => {
   resetEntryDialog();
   els.entryForm?.reset?.();
   
-  const topProjects = getTopProjects(CACHE_ROWS, 5);
-  populateProjectSuggestions(topProjects);
+  const allProjects = getRecentProjects(CACHE_ROWS);
+  populateProjectSuggestions(allProjects, 5);
 
   // Pre-fill today's date
-  if (els.date) {
-    if (els.date.type === 'date') {
-      els.date.value = todayISO();
-    } else {
-      els.date.value = isoToDMY(todayISO());
-    }
-  }
-
+  setDefaultEntryDate();
+  
   if (els.task) els.task.value = 'working';
   refreshTaskSuggestions(els.project?.value || '');
   
   els.entryDialog?.showModal?.();
   els.project?.focus?.();
+});
+
+on(els.projectsWrap, 'add-project-entry', (event) => {
+  const project = String(event.detail?.project || '').trim();
+  if (!project) return;
+
+  resetEntryDialog();
+  els.entryForm?.reset?.();
+  if (els.project) els.project.value = project;
+  const projectField = document.getElementById('projectField');
+  if (projectField) projectField.hidden = true;
+  els.entryDialog?.setAttribute('data-project-locked', 'true');
+  const title = els.entryDialog?.querySelector('h3');
+  if (title) title.textContent = `Add to ${project}`;
+  setDefaultEntryDate();
+  if (els.task) els.task.value = 'working';
+  refreshTaskSuggestions(project);
+  els.entryDialog?.showModal?.();
+  els.task?.focus?.();
 });
 
 on(els.chkNotes, 'change', () => {
@@ -444,33 +465,38 @@ function calcLevel(minutes, maxMinutes) {
   return 4;
 }
 
-function getTopProjects(rows, limit = 5) {
+function getRecentProjects(rows) {
   if (!rows?.length) return [];
-  const freq = new Map();
-  for (const row of rows) {
+  const latestByProject = new Map();
+  rows.forEach((row, index) => {
     const project = String(row.project || '').trim();
-    if (!project) continue;
-    freq.set(project, (freq.get(project) || 0) + 1);
-  }
-  return Array.from(freq.entries())
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .slice(0, limit)
-    .map(([project]) => project);
+    if (!project) return;
+    const key = project.toLowerCase();
+    const timestamp = Date.parse(String(row.date || '').slice(0, 10)) || 0;
+    const current = latestByProject.get(key);
+    if (!current || timestamp > current.timestamp || (timestamp === current.timestamp && index < current.index)) {
+      latestByProject.set(key, { project, timestamp, index });
+    }
+  });
+  return Array.from(latestByProject.values())
+    .sort((a, b) => (b.timestamp - a.timestamp) || (a.index - b.index) || a.project.localeCompare(b.project))
+    .map(({ project }) => project);
 }
 
-function populateProjectSuggestions(projects) {
+function populateProjectSuggestions(projects, quickPickLimit = 5) {
   const datalist = document.getElementById('projectSuggestions');
   const quickPicks = document.getElementById('projectQuickPicks');
   if (!datalist) return;
   datalist.innerHTML = projects.map((project) => `<option value="${escapeHtml(project)}"></option>`).join('');
 
   if (!quickPicks) return;
-  if (!projects.length) {
+  const recentProjects = projects.slice(0, quickPickLimit);
+  if (!recentProjects.length) {
     quickPicks.innerHTML = '<div class="quick-picks-empty">No recent projects yet.</div>';
     return;
   }
 
-  quickPicks.innerHTML = projects.map((project) =>
+  quickPicks.innerHTML = recentProjects.map((project) =>
     `<button type="button" data-project="${escapeHtml(project)}">${escapeHtml(project)}</button>`
   ).join('');
 
