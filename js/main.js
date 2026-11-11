@@ -1,3 +1,4 @@
+import { renderWeeklySummary } from './weekly.js';
 // js/main.js
 import {
   supabase,
@@ -32,6 +33,7 @@ import { OAUTH_REDIRECT_TO } from './config.js';
 const on = (el, evt, fn) => el && el.addEventListener(evt, fn);
 
 let CACHE_ROWS = [];
+let SELECTED_DAY = null;
 let SHOW_NOTES = false;
 const AUTH_REDIRECT_TO = getAuthRedirectUrl();
 let CALENDAR_YEAR = new Date().getFullYear();
@@ -82,6 +84,8 @@ async function refreshUI({ force = false } = {}) {
   const user = await getSessionUser();
   if (!user) {
     CACHE_ROWS = [];
+    SELECTED_DAY = null;
+    document.getElementById('weeklySummary').hidden = true;
     setSignedOutUI();
     setEmpty('Sign in to load your log…');
     return null;
@@ -114,15 +118,29 @@ async function refreshUI({ force = false } = {}) {
 
 function paintRows(rows) {
   CACHE_ROWS = rows || [];
+  renderWeeklySummary(CACHE_ROWS, SELECTED_DAY, selectWeekDay);
   if (!CACHE_ROWS.length) {
     setEmpty('No entries yet. Start your first session!');
     return;
   }
-  renderRows(CACHE_ROWS, SHOW_NOTES, { onEdit: openEditDialog, onProject: openProjectFromTable });
+  renderFilteredRows();
   renderProjects(CACHE_ROWS);
   if (CALENDAR_OPEN) renderCalendar(CACHE_ROWS, CALENDAR_YEAR);
 }
 
+
+function selectWeekDay(date) {
+  SELECTED_DAY = date;
+  renderWeeklySummary(CACHE_ROWS, SELECTED_DAY, selectWeekDay);
+  renderFilteredRows();
+  renderProjects(CACHE_ROWS);
+}
+
+function renderFilteredRows() {
+  const rows = SELECTED_DAY ? CACHE_ROWS.filter(row => String(row.date).slice(0, 10) === SELECTED_DAY) : CACHE_ROWS;
+  renderRows(rows, SHOW_NOTES, { onEdit: openEditDialog, onProject: openProjectFromTable });
+  if (!rows.length && SELECTED_DAY) setEmpty('No entries for this day.');
+}
 
 function openProjectFromTable(projectName) {
   showProject(CACHE_ROWS, projectName);
@@ -208,7 +226,7 @@ on(els.projectsWrap, 'add-project-entry', (event) => {
 
 on(els.chkNotes, 'change', () => {
   SHOW_NOTES = !!els.chkNotes.checked;
-  renderRows(CACHE_ROWS, SHOW_NOTES, { onEdit: openEditDialog, onProject: openProjectFromTable });
+  renderFilteredRows();
 });
 
 on(els.btnDownloadCsv, 'click', () => downloadCSV(CACHE_ROWS));
