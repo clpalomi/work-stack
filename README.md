@@ -27,3 +27,31 @@ To serve this app as `workstack.claudiopalominos.com` instead of `claudiopalomin
 ## To-do
 - Colors for categories
 - stats
+
+## Task start times and weekly stats
+
+Before using task times, run [`supabase/task-times.sql`](supabase/task-times.sql)
+in **Supabase Dashboard → SQL Editor**. This adds a nullable `start_time` column
+of type `time without time zone` to `public.work_log` and validates timed durations
+(up to 24 hours). Existing `date` and `minutes` store the day and duration; no
+end-time column is needed. Existing RLS policies continue to protect the same rows.
+
+Enter **Start time** when adding or editing a session. Times represent the local
+clock time on the recorded date, and do not shift when viewing from another time
+zone. Leave unknown historical times blank; they appear under **Time not recorded**.
+Do not backfill old entries with the current time. To record multiple separated
+slots of work, create one entry per slot.
+
+Open **Weekly stats** from the right-hand menu. It starts at last week; use the
+arrows or date picker to browse another week. Colors identify projects; hover,
+focus, or tap a slot for its project, task, time range, and duration. Overlapping
+slots appear side by side, and sessions crossing midnight continue on the next day.
+The query retrieves all entries for the selected week, including carryover from
+the preceding Sunday, independently of the recent table's 100-entry limit.
+
+Apply the SQL before deploying this version: reads tolerate old entries without
+start times, but saving entries requires the new column. No new credentials or
+RLS policy changes are needed. The SQL is provided for you to run; it is not
+applied automatically by the app.
+
+Run the timeline layout tests with `node --test tests/*.test.mjs` (Node 22+).

@@ -73,7 +73,7 @@ export async function fetchLog() {
 }
 
 // client.js (append these)
-export async function insertLog({ task, project, minutes, dateISO, notes }) {
+export async function insertLog({ task, project, minutes, dateISO, notes, startTime }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not signed in');
   const payload = {
@@ -81,6 +81,7 @@ export async function insertLog({ task, project, minutes, dateISO, notes }) {
     task, project,
     minutes: Number(minutes),
     date: dateISO,       // 'YYYY-MM-DD'
+    start_time: startTime || null,
     notes: notes || null
   };
   const { data, error } = await supabase.from('work_log').insert(payload).select().single();
@@ -93,7 +94,7 @@ export async function fetchAllForUser(userId) {
   if (!resolvedUserId) throw new Error('Not signed in');
   const { data, error } = await supabase
     .from('work_log')
-    .select('id, task, project, minutes, date, notes')
+    .select('*')
     .eq('user_id', resolvedUserId)
     .order('date', { ascending: false })
     .order('id', { ascending: false })
@@ -106,12 +107,17 @@ export async function fetchAllForUser(userId) {
 export async function fetchWeekEntries(userId, now = new Date()) {
   if (!userId) throw new Error('Not signed in');
   const { start, end } = weekRange(now);
+  return fetchEntriesBetween(userId, start, end);
+}
+
+export async function fetchEntriesBetween(userId, start, end) {
+  if (!userId) throw new Error('Not signed in');
   const rows = [];
   const pageSize = 500;
   while (true) {
     const { data, error, count } = await supabase
       .from('work_log')
-      .select('id, task, project, minutes, date, notes', { count: 'exact' })
+      .select('*', { count: 'exact' })
       .eq('user_id', userId)
       .gte('date', start)
       .lte('date', end)
@@ -129,7 +135,7 @@ export async function fetchWeekEntries(userId, now = new Date()) {
   }
 }
 
-export async function updateLogEntry(id, { task, project, minutes, dateISO, notes }) {
+export async function updateLogEntry(id, { task, project, minutes, dateISO, notes, startTime }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not signed in');
   const payload = {
@@ -137,6 +143,7 @@ export async function updateLogEntry(id, { task, project, minutes, dateISO, note
     project: String(project || '').trim(),
     minutes: Number(minutes),
     date: dateISO,
+    start_time: startTime || null,
     notes: notes ? String(notes).trim() : null
   };
   const { data, error } = await supabase
@@ -144,7 +151,7 @@ export async function updateLogEntry(id, { task, project, minutes, dateISO, note
     .update(payload)
     .eq('id', id)
     .eq('user_id', user.id)
-    .select('id, task, project, minutes, date, notes')
+    .select('*')
     .single();
   if (error) throw error;
   return data;

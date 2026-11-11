@@ -1,3 +1,4 @@
+import { openWeeklyStats } from './stats.js';
 import { renderWeeklySummary } from './weekly.js';
 // js/main.js
 import {
@@ -43,7 +44,7 @@ let CALENDAR_OPEN = false;
 let EDITING_ID = null;
 let REFRESHING = null;
 const ROW_CACHE_TTL_MS = 5 * 60 * 1000;
-const ROW_CACHE_PREFIX = 'workstack:rows:';
+const ROW_CACHE_PREFIX = 'workstack:rows:v2:';
 
 function resetEntryDialog() {
   EDITING_ID = null;
@@ -88,6 +89,8 @@ async function refreshUI({ force = false } = {}) {
     CACHE_ROWS = [];
     WEEK_ROWS = null;
     document.getElementById('weeklySummary').innerHTML = '';
+    document.getElementById('statsDialog').close();
+    document.getElementById('statsContent').replaceChildren();
     SELECTED_DAY = null;
     document.getElementById('weeklySummary').hidden = true;
     setSignedOutUI();
@@ -318,6 +321,11 @@ on(els.entryForm, 'submit', async (e) => {
     const project = (els.project?.value || '').trim();
     const minutes = Number((els.minutes?.value || '').trim());
     const notes   = (els.fNotes?.value || '').trim();
+    const startTime = document.getElementById('startTime').value;
+    if (startTime && minutes > 1440) {
+      alert('Timed entries can last up to 24 hours. Split longer work into separate entries.');
+      return;
+    }
 
     const dateISO = readISODateFromInput(els.date);
 
@@ -331,9 +339,9 @@ on(els.entryForm, 'submit', async (e) => {
 
     // IMPORTANT: insertLog expects { ... , dateISO }
     if (EDITING_ID) {
-      await updateLogEntry(EDITING_ID, { task, project, minutes, dateISO, notes });
+      await updateLogEntry(EDITING_ID, { task, project, minutes, dateISO, notes, startTime });
     } else {
-      await insertLog({ task, project, minutes, dateISO, notes });
+      await insertLog({ task, project, minutes, dateISO, notes, startTime });
     }
 
     els.entryDialog?.close?.();
@@ -350,7 +358,9 @@ on(els.entryForm, 'submit', async (e) => {
 
   } catch (err) {
     console.error(err);
-    alert('Failed to save. Please check your input and that you are signed in.');
+    alert(String(err.message || '').includes('start_time')
+      ? 'Enable task times first: add the start_time column using the SQL in supabase/task-times.sql.'
+      : 'Failed to save. Please check your input and that you are signed in.');
   }
 });
 
@@ -574,6 +584,7 @@ function openEditDialog(row) {
   if (els.project) els.project.value = row.project || '';
   if (els.task) els.task.value = row.task || '';
   if (els.minutes) els.minutes.value = Number(row.minutes) || '';
+  document.getElementById('startTime').value = (row.start_time || '').slice(0, 5);
   if (els.fNotes) els.fNotes.value = row.notes || '';
   if (els.date) {
     if (els.date.type === 'date') els.date.value = row.date || '';
@@ -645,6 +656,11 @@ document.addEventListener('keydown', (e) => {
 on(menuMy, 'click', () => {
   document.getElementById('log-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   closeMenu();
+});
+
+on(document.getElementById('menu-stats'), 'click', () => {
+  closeMenu();
+  openWeeklyStats();
 });
 
 on(menuProjects, 'click', () => {
