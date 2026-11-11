@@ -1,3 +1,4 @@
+import { sessionEndingAt } from './session-time.js';
 import { openWeeklyStats } from './stats.js';
 import { renderWeeklySummary } from './weekly.js';
 // js/main.js
@@ -42,12 +43,14 @@ const AUTH_REDIRECT_TO = getAuthRedirectUrl();
 let CALENDAR_YEAR = new Date().getFullYear();
 let CALENDAR_OPEN = false;
 let EDITING_ID = null;
+let SESSION_ENDED_AT = null;
 let REFRESHING = null;
 const ROW_CACHE_TTL_MS = 5 * 60 * 1000;
 const ROW_CACHE_PREFIX = 'workstack:rows:v2:';
 
 function resetEntryDialog() {
   EDITING_ID = null;
+  clearSessionEnd();
   const title = els.entryDialog?.querySelector('h3');
   if (title) title.textContent = 'Add work log';
   if (els.save) els.save.textContent = 'Save';
@@ -259,22 +262,39 @@ on(els.btnDownloadXlsx, 'click', () => downloadXLSX(CACHE_ROWS));
 
 // ---------------- Date picker (optional) ----------------
 // If ui.js exposes a Flatpickr initializer, attach it (no-op if not included)
-if (els.date) {
+if (els.date && els.date.type !== 'date') {
   try { initDatePicker(els.date); } catch { /* ignore if not loaded */ }
 }
 
-// Today button
-on(els.dateToday, 'click', () => {
-  if (!els.date) return;
-  const iso = todayISO();
-  if (els.date.type === 'date') {
-    els.date.value = iso;
-  } else {
-    els.date.value = isoToDMY(iso);
+function clearSessionEnd() {
+  SESSION_ENDED_AT = null;
+  document.getElementById('sessionTimeHint').textContent = 'Optional · enter a start time, or use Now after entering Minutes.';
+}
+
+function updateStartFromEnd() {
+  if (!SESSION_ENDED_AT) return;
+  const hint = document.getElementById('sessionTimeHint');
+  const endLabel = SESSION_ENDED_AT.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  try {
+    const { dateISO, startTime } = sessionEndingAt(SESSION_ENDED_AT, Number(els.minutes.value));
+    els.date.value = els.date.type === 'date' ? dateISO : isoToDMY(dateISO);
+    document.getElementById('startTime').value = startTime;
+    hint.textContent = `Ended at ${endLabel} · start calculated from Minutes.`;
+  } catch {
+    document.getElementById('startTime').value = '';
+    hint.textContent = `Ended at ${endLabel} · enter 1–1440 whole minutes to calculate the start.`;
   }
-  els.date.dispatchEvent(new Event('input', { bubbles: true }));
-  els.date.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+// Now means the session ended at this click, rather than when the form is saved.
+on(els.dateToday, 'click', () => {
+  SESSION_ENDED_AT = new Date();
+  setDefaultEntryDate();
+  updateStartFromEnd();
 });
+on(els.minutes, 'input', updateStartFromEnd);
+on(document.getElementById('startTime'), 'input', clearSessionEnd);
+on(els.date, 'input', clearSessionEnd);
 
 on(els.project, 'change', () => {
   refreshTaskSuggestions(els.project?.value || '');
@@ -322,7 +342,7 @@ on(els.entryForm, 'submit', async (e) => {
     const minutes = Number((els.minutes?.value || '').trim());
     const notes   = (els.fNotes?.value || '').trim();
     const startTime = document.getElementById('startTime').value;
-    if (startTime && minutes > 1440) {
+    if ((startTime || SESSION_ENDED_AT) && minutes > 1440) {
       alert('Timed entries can last up to 24 hours. Split longer work into separate entries.');
       return;
     }
@@ -580,6 +600,7 @@ function refreshTaskSuggestions(projectName) {
 
 function openEditDialog(row) {
   if (!row) return;
+  clearSessionEnd();
   EDITING_ID = row.id;
   if (els.project) els.project.value = row.project || '';
   if (els.task) els.task.value = row.task || '';

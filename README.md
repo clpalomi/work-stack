@@ -36,7 +36,11 @@ of type `time without time zone` to `public.work_log` and validates timed durati
 (up to 24 hours). Existing `date` and `minutes` store the day and duration; no
 end-time column is needed. Existing RLS policies continue to protect the same rows.
 
-Enter **Start time** when adding or editing a session. Times represent the local
+Enter **Start time** when adding or editing a session, or enter **Minutes** and
+click **Now** to mark the end of a session. Now calculates the start time and date
+from the duration (including sessions that started the previous day). Changing
+Minutes after clicking Now keeps the clicked end instant fixed and recalculates
+the start. Editing the date or start time switches back to manual entry. Times represent the local
 clock time on the recorded date, and do not shift when viewing from another time
 zone. Leave unknown historical times blank; they appear under **Time not recorded**.
 Do not backfill old entries with the current time. To record multiple separated
