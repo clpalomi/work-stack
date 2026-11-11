@@ -4,6 +4,7 @@ import {
   supabase,
   getSessionUser,
   fetchAllForUser,
+  fetchWeekEntries,
   signInWithGoogle,
   signOut,
   insertLog,
@@ -34,6 +35,7 @@ const on = (el, evt, fn) => el && el.addEventListener(evt, fn);
 
 let CACHE_ROWS = [];
 let SELECTED_DAY = null;
+let WEEK_ROWS = null;
 let SHOW_NOTES = false;
 const AUTH_REDIRECT_TO = getAuthRedirectUrl();
 let CALENDAR_YEAR = new Date().getFullYear();
@@ -84,6 +86,8 @@ async function refreshUI({ force = false } = {}) {
   const user = await getSessionUser();
   if (!user) {
     CACHE_ROWS = [];
+    WEEK_ROWS = null;
+    document.getElementById('weeklySummary').innerHTML = '';
     SELECTED_DAY = null;
     document.getElementById('weeklySummary').hidden = true;
     setSignedOutUI();
@@ -100,11 +104,19 @@ async function refreshUI({ force = false } = {}) {
     }
 
   try {
-    const data = await fetchAllForUser(user.id);
+    const [data, weeklyData] = await Promise.all([
+      fetchAllForUser(user.id),
+      fetchWeekEntries(user.id),
+    ]);
+    WEEK_ROWS = weeklyData;
     writeRowsCache(user.id, data);
     paintRows(data);
   } catch (err) {
     console.error(err);
+    WEEK_ROWS = null;
+    SELECTED_DAY = null;
+    document.getElementById('weeklySummary').hidden = true;
+    if (cachedRows) paintRows(cachedRows);
     if (!cachedRows) setEmpty('Could not load your log. Check RLS/policies.');
   }
   return null;
@@ -118,7 +130,7 @@ async function refreshUI({ force = false } = {}) {
 
 function paintRows(rows) {
   CACHE_ROWS = rows || [];
-  renderWeeklySummary(CACHE_ROWS, SELECTED_DAY, selectWeekDay);
+  if (WEEK_ROWS) renderWeeklySummary(WEEK_ROWS, SELECTED_DAY, selectWeekDay);
   if (!CACHE_ROWS.length) {
     setEmpty('No entries yet. Start your first session!');
     return;
@@ -131,13 +143,13 @@ function paintRows(rows) {
 
 function selectWeekDay(date) {
   SELECTED_DAY = date;
-  renderWeeklySummary(CACHE_ROWS, SELECTED_DAY, selectWeekDay);
+  if (WEEK_ROWS) renderWeeklySummary(WEEK_ROWS, SELECTED_DAY, selectWeekDay);
   renderFilteredRows();
   renderProjects(CACHE_ROWS);
 }
 
 function renderFilteredRows() {
-  const rows = SELECTED_DAY ? CACHE_ROWS.filter(row => String(row.date).slice(0, 10) === SELECTED_DAY) : CACHE_ROWS;
+  const rows = SELECTED_DAY ? (WEEK_ROWS || []).filter(row => String(row.date).slice(0, 10) === SELECTED_DAY) : CACHE_ROWS;
   renderRows(rows, SHOW_NOTES, { onEdit: openEditDialog, onProject: openProjectFromTable });
   if (!rows.length && SELECTED_DAY) setEmpty('No entries for this day.');
 }

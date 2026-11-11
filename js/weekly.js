@@ -1,4 +1,11 @@
 // Calendar weeks start on Monday, using the viewer's local date.
+export function weekRange(now = new Date()) {
+  const { days } = summarizeWeek([], now);
+  const previous = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  previous.setDate(previous.getDate() - (previous.getDay() + 6) % 7 - 7);
+  const start = `${previous.getFullYear()}-${String(previous.getMonth() + 1).padStart(2, '0')}-${String(previous.getDate()).padStart(2, '0')}`;
+  return { start, end: days[6].date };
+}
 export function summarizeWeek(rows, now = new Date()) {
   const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   monday.setDate(monday.getDate() - (monday.getDay() + 6) % 7);
@@ -32,16 +39,23 @@ export function renderWeeklySummary(rows, selectedDate, onSelect) {
     ? (minutes ? 'First hours across these two weeks' : 'No hours across these two weeks')
     : `${difference > 0 ? '+' : difference < 0 ? '−' : ''}${hours(Math.abs(difference))} vs last week`;
   const max = Math.max(1, ...days.map(day => day.minutes));
+  const expanded = root.querySelector('details')?.open ?? false;
   root.hidden = false;
   root.innerHTML = `
-    <div class="week-heading"><div><h2>This week</h2><strong>${hours(minutes)}</strong><p>${change}</p></div>
-    <button type="button" id="clearWeekFilter" ${selectedDate ? '' : 'hidden'}>Show all entries</button></div>
+    <details ${expanded ? 'open' : ''}>
+    <summary class="week-heading"><span><span class="week-title">This week</span><strong>${hours(minutes)}</strong><span class="week-change">${change}</span></span><span class="week-chevron" aria-hidden="true">⌄</span></summary>
+    <button type="button" id="clearWeekFilter" ${selectedDate ? '' : 'hidden'}>Show all entries</button>
     <div class="week-chart" role="group" aria-label="Daily hours, Monday to Sunday. Select a day to filter entries.">
       ${days.map(day => `<button type="button" class="week-day" data-date="${day.date}" aria-pressed="${selectedDate === day.date}" aria-label="${day.date}: ${hours(day.minutes)}. Filter entries.">
         <span class="week-value">${hours(day.minutes)}</span><span class="week-track" aria-hidden="true"><span style="height:${day.minutes / max * 100}%"></span></span><span>${day.label}</span>
       </button>`).join('')}
-    </div><p class="week-note">Monday–Sunday · Based on your latest 100 entries · Select a day to filter</p>
-    <p class="week-filter" aria-live="polite">${selectedDate ? `Showing entries for ${selectedDate}` : 'Showing all entries'}</p>`;
-  root.querySelectorAll('[data-date]').forEach(button => button.addEventListener('click', () => onSelect(button.dataset.date === selectedDate ? null : button.dataset.date)));
-  root.querySelector('#clearWeekFilter').addEventListener('click', () => onSelect(null));
+    </div></details>`;
+  root.querySelectorAll('[data-date]').forEach(button => button.addEventListener('click', () => {
+    onSelect(button.dataset.date === selectedDate ? null : button.dataset.date);
+    root.querySelector(`[data-date="${button.dataset.date}"]`)?.focus();
+  }));
+  root.querySelector('#clearWeekFilter').addEventListener('click', () => {
+    onSelect(null);
+    root.querySelector('summary').focus();
+  });
 }

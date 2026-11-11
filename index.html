@@ -545,9 +545,16 @@
     .weekly-summary { margin-bottom: 16px; padding: 20px; }
     .weekly-summary[hidden], .weekly-summary [hidden] { display: none; }
     .week-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-    .week-heading h2 { font-size: 15px; margin: 0 0 8px; }
+    .week-heading { cursor: pointer; list-style: none; }
+    .week-heading::-webkit-details-marker { display: none; }
+    .week-heading:focus-visible { outline: 2px solid var(--ring); outline-offset: 5px; border-radius: 4px; }
+    .week-title { display: block; font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+    .week-change { display: block; margin-top: 8px; }
+    .week-chevron { font-size: 24px; transition: transform .15s; }
+    details[open] > .week-heading .week-chevron { transform: rotate(180deg); }
+    #clearWeekFilter { margin-top: 12px; }
     .week-heading strong { font-size: 30px; }
-    .week-heading p, .week-note, .week-filter { font-size: 12px; color: var(--muted, #64748b); }
+    .week-change { font-size: 12px; color: var(--muted, #64748b); }
     .week-chart { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 18px; }
     .week-day { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 2px; min-width: 0; border: 1px solid transparent; background: transparent; font-size: 12px; cursor: pointer; }
     .week-day[aria-pressed="true"] { border-color: #2563eb; background: var(--surface-2); }
@@ -555,8 +562,6 @@
     .week-value { font-size: 11px; white-space: nowrap; }
     .week-track { height: 64px; width: min(100%, 28px); background: var(--surface-2); border-radius: 5px; display: flex; align-items: flex-end; overflow: hidden; }
     .week-track > span { width: 100%; background: #6489c8; border-radius: 5px; }
-    .week-note { margin-bottom: 0; }
-    .week-filter { margin-bottom: 0; }
   </style>
 </head>
 <body>

@@ -1,3 +1,4 @@
+import { weekRange } from './weekly.js';
 // js/client.js
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, APP } from './config.js';
@@ -99,6 +100,33 @@ export async function fetchAllForUser(userId) {
     .limit(APP.tableLimit);
   if (error) throw error;
   return data ?? [];
+}
+
+// Fetch both complete calendar weeks independently of the recent-entry table limit.
+export async function fetchWeekEntries(userId, now = new Date()) {
+  if (!userId) throw new Error('Not signed in');
+  const { start, end } = weekRange(now);
+  const rows = [];
+  const pageSize = 500;
+  while (true) {
+    const { data, error, count } = await supabase
+      .from('work_log')
+      .select('id, task, project, minutes, date, notes', { count: 'exact' })
+      .eq('user_id', userId)
+      .gte('date', start)
+      .lte('date', end)
+      .order('date', { ascending: false })
+      .order('id', { ascending: false })
+      .range(rows.length, rows.length + pageSize - 1);
+    if (error) throw error;
+    const page = data ?? [];
+    rows.push(...page);
+    if (count !== null && rows.length >= count) return rows;
+    if (!page.length) {
+      if (count > rows.length) throw new Error('Incomplete weekly entries response');
+      return rows;
+    }
+  }
 }
 
 export async function updateLogEntry(id, { task, project, minutes, dateISO, notes }) {
